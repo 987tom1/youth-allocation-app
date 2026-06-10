@@ -3,11 +3,13 @@
 Guidance for Claude Code when working in this package.
 
 > **Canonical demo location:** the maintained, deployed offline demo is
-> `Camp Platform/demo-site/allocation-platform.html` (served at
+> `../youth app demo/allocation-platform.html` (served at
 > https://yc-camp-demo.vercel.app/allocation-platform.html, alongside
-> `allocation-exec.html` and `allocation-training.html`). The `demo-site/` copy in
-> **this** folder is the original snapshot. The "Demo-site UI patterns" below track
-> the deployed version.
+> `allocation-exec.html` and `allocation-training.html`). All demos were consolidated
+> into the sibling **`youth app demo/`** folder, which is now the Vercel deploy source
+> (CLI deploys — see Project-4 CLAUDE.md). The old local `demo-site/` snapshot in this
+> folder has been **removed** (it was a stale duplicate). The "Demo-site UI patterns"
+> below track the deployed version, which `public/index.html` has been aligned to.
 
 ## What this is
 
@@ -78,8 +80,10 @@ Grade logins can search for and allocate students from OTHER grades as long as t
 
 | File | Purpose |
 |------|---------|
-| `public/index.html` | Implementation-ready SPA — calls the Express backend via relative API paths |
-| `demo-site/allocation-platform.html` | Standalone offline demo — all API calls handled by embedded MockAPI |
+| `public/index.html` | Implementation-ready SPA — calls the Express backend via relative API paths. **Aligned to the canonical demo** (Home attendance hero + by-quad tiles, interactive student-detail leader assignment, in-picker de-allocate, condensed My Students + filters, quad add/edit/allocate parity, trends grpBar, at-risk prev-term line, safe-area header). |
+| `../youth app demo/allocation-platform.html` | Standalone offline demo (deployed) — all API calls handled by embedded MockAPI. The source of truth for UI/UX; the local `demo-site/` was removed. |
+
+> **Backend note:** the `quad` role now has `leader:write` (full add/edit/allocate scoped to its gender + year bracket — see `quadGenderOf`/`quadGradesOf` in `access-control.ts` and `leader.service.ts`, covered by `src/tests/leader.service.test.ts`).
 
 ## Seed demo accounts (password: `demo1234`)
 
