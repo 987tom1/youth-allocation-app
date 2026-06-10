@@ -587,48 +587,143 @@ async function doLogout() {
 }
 
 // ============================================================
-// HOME
+// HOME (aligned to allocation-platform demo: attendance hero + tiles)
 // ============================================================
+let _homeQuadOpen = null;
+function toggleHomeQuad(q) { _homeQuadOpen = (_homeQuadOpen === q) ? null : q; renderHome(); }
+function _hQuadGrades(q) { return (q === 'g79' || q === 'b79') ? [7, 8, 9] : [10, 11, 12]; }
+function _hGradeAvg(trends, g) { const x = ((trends && trends.byGrade) || []).find(y => y.grade === g); return x ? Math.round(x.averageAttendance) : 0; }
+function _hQuadAvg(trends, q) { const x = ((trends && trends.byQuad) || []).find(y => y.quad === q); return x ? Math.round(x.averageAttendance) : 0; }
+function _hScopeSvcAvg(trends, u) {
+  if (!trends) return 0;
+  if (u.role === 'grade') return _hGradeAvg(trends, u.grade);
+  if (u.role === 'quad') return _hQuadAvg(trends, u.quad);
+  return trends.ministry ? Math.round(trends.ministry.averageAttendance) : 0;
+}
+function _hScopeSvcSess(trends, u) {
+  if (!trends) return 0;
+  if (u.role === 'quad') { const q = (trends.byQuad || []).find(x => x.quad === u.quad); return q && q.sessions ? q.sessions.length : 0; }
+  if (u.role === 'grade') { const g = (trends.byGrade || []).find(x => x.grade === u.grade); return g && g.sessions ? g.sessions.length : 0; }
+  return trends.ministry && trends.ministry.sessions ? trends.ministry.sessions.length : 0;
+}
+function _hGradeMini(label, studs, avgWk) {
+  const uniq = studs.filter(s => s.svcAttended > 0).length;
+  return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1px solid var(--paper-dark)">
+    <div style="width:42px;font-size:11px;font-weight:700;color:var(--ink-mid)">${label}</div>
+    <div style="flex:1"><span style="font-size:14px;font-weight:800">${uniq}</span><span style="font-size:9px;color:var(--ink-faint);margin-left:4px">uniq</span></div>
+    <div><span style="font-size:14px;font-weight:800">${avgWk}</span><span style="font-size:9px;color:var(--ink-faint);margin-left:4px">avg/wk</span></div>
+  </div>`;
+}
+function _hAttTile(label, studs, avgWk, opts) {
+  opts = opts || {};
+  const svcUniq = studs.filter(s => s.svcAttended > 0).length;
+  const grpEnr = studs.filter(s => s.grpTotal > 0);
+  const grpUniq = studs.filter(s => s.grpAttended > 0).length;
+  const grpAvg = grpEnr.length ? Math.round(grpEnr.reduce((a, s) => a + s.grpAttended, 0) / grpEnr.length) : 0;
+  const chev = (opts.chev !== undefined)
+    ? `<span style="display:inline-block;transition:transform .2s;transform:rotate(${opts.chev ? '90' : '0'}deg);color:var(--ink-faint);font-weight:800">›</span>` : '';
+  let h = `<div class="qcard" style="${opts.span ? 'grid-column:1/-1;' : ''}${opts.click ? 'cursor:pointer;' : ''}padding:11px"${opts.click ? ` onclick="${opts.click}"` : ''}>`;
+  h += `<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">${chev}<div style="font-size:11px;font-weight:700;color:var(--ink-mid)">${label}</div></div>`;
+  h += `<div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:4px;align-items:center;margin-bottom:3px">
+    <div style="font-size:9px;font-weight:800;color:var(--ink-faint);text-transform:uppercase;width:46px">Youth</div>
+    <div style="text-align:center;background:var(--paper-dark);border-radius:4px;padding:3px 2px"><div style="font-size:15px;font-weight:800">${svcUniq}</div><div style="font-size:8px;font-weight:700;color:var(--ink-faint);text-transform:uppercase">Unique</div></div>
+    <div style="text-align:center;background:var(--paper-dark);border-radius:4px;padding:3px 2px"><div style="font-size:15px;font-weight:800">${avgWk}</div><div style="font-size:8px;font-weight:700;color:var(--ink-faint);text-transform:uppercase">Avg/wk</div></div>
+  </div>`;
+  h += `<div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:4px;align-items:center">
+    <div style="font-size:9px;font-weight:800;color:var(--ink-faint);text-transform:uppercase;width:46px;opacity:.8">Groups</div>
+    <div style="text-align:center;background:rgba(0,0,0,.04);border-radius:4px;padding:3px 2px"><div style="font-size:15px;font-weight:800;opacity:.8">${grpUniq}</div><div style="font-size:8px;font-weight:700;color:var(--ink-faint);text-transform:uppercase">Unique</div></div>
+    <div style="text-align:center;background:rgba(0,0,0,.04);border-radius:4px;padding:3px 2px"><div style="font-size:15px;font-weight:800;opacity:.8">${grpAvg}</div><div style="font-size:8px;font-weight:700;color:var(--ink-faint);text-transform:uppercase">Avg/grp</div></div>
+  </div>`;
+  if (opts.gradeRows) h += opts.gradeRows;
+  h += '</div>';
+  return h;
+}
+
 async function renderHome() {
   setApp(shell('<div class="loading"><div class="spin"></div></div>'));
   const u = S.user;
-  let stats, importHistory;
-  try { stats = await API.get('/overview'); } catch {}
+  let stats, trends, sc = [], importHistory;
+  try {
+    [stats, trends, sc] = await Promise.all([
+      API.get('/overview').catch(() => null),
+      API.get('/trends').catch(() => null),
+      API.get('/students').catch(() => []),
+    ]);
+  } catch {}
+  sc = sc || [];
 
-  // Change 7: fetch import history for director/admin
-  if (['director','admin'].includes(u.role)) {
+  if (['director', 'admin'].includes(u.role)) {
     try { importHistory = await API.get('/import/history'); } catch {}
   }
 
-  let body = `<div class="ph"><div class="ph-title">👋 ${u.displayName}</div><div class="ph-sub">${roleBadge(u)}</div></div>`;
+  // ── Hero card: welcome + attendance summary (current + previous term) ──
+  const svcUniq = sc.filter(s => s.svcAttended > 0).length;
+  const svcAvg = _hScopeSvcAvg(trends, u);
+  const svcSessN = _hScopeSvcSess(trends, u);
+  const grpEnr = sc.filter(s => s.grpTotal > 0);
+  const grpUniq = sc.filter(s => s.grpAttended > 0).length;
+  const grpWeeks = grpEnr.length ? Math.max(0, ...grpEnr.map(s => s.grpTotal)) : 0;
+  const grpAtt = sc.reduce((a, s) => a + s.grpAttended, 0);
+  const grpAvgWk = grpWeeks > 0 ? Math.round(grpAtt / grpWeeks) : 0;
+
+  let body = `<div style="background:linear-gradient(135deg,#1e3a5f,#2d5a8a);color:#fff;border-radius:14px;padding:12px 14px;margin-bottom:10px">`;
+  body += `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px"><div style="font-size:18px;font-weight:800;line-height:1.1">👋 ${u.displayName}</div>${roleBadge(u)}</div>`;
+  body += `<table style="width:100%;border-collapse:collapse;table-layout:fixed"><colgroup><col style="width:44%"><col style="width:28%"><col style="width:28%"></colgroup>`;
+  body += `<thead><tr>
+    <th style="font-size:8px;font-weight:700;opacity:.45;text-transform:uppercase;letter-spacing:.04em;text-align:left;padding-bottom:3px">This term</th>
+    <th style="font-size:8px;font-weight:700;opacity:.55;text-transform:uppercase;letter-spacing:.04em;text-align:center;padding-bottom:3px">Unique</th>
+    <th style="font-size:8px;font-weight:700;opacity:.55;text-transform:uppercase;letter-spacing:.04em;text-align:center;padding-bottom:3px">Avg/wk</th>
+  </tr></thead><tbody>`;
+  body += `<tr style="background:rgba(255,255,255,.1)">
+    <td style="font-size:11px;font-weight:800;opacity:.75;padding:5px 6px;border-radius:6px 0 0 6px;white-space:nowrap">Youth <span style="opacity:.6">(${svcSessN})</span></td>
+    <td style="text-align:center;padding:5px 4px"><span style="font-size:19px;font-weight:800">${svcUniq}</span></td>
+    <td style="text-align:center;padding:5px 4px;border-radius:0 6px 6px 0"><span style="font-size:19px;font-weight:800">${svcAvg}</span></td>
+  </tr>`;
+  body += `<tr style="background:rgba(255,255,255,.05)">
+    <td style="font-size:11px;font-weight:800;opacity:.6;padding:5px 6px;border-radius:6px 0 0 6px;white-space:nowrap">Groups <span style="opacity:.6">(${grpWeeks})</span></td>
+    <td style="text-align:center;padding:5px 4px"><span style="font-size:19px;font-weight:800;opacity:.8">${grpUniq}</span></td>
+    <td style="text-align:center;padding:5px 4px;border-radius:0 6px 6px 0"><span style="font-size:19px;font-weight:800;opacity:.8">${grpAvgWk}</span></td>
+  </tr></tbody></table>`;
+
+  // Previous-term summary
+  const pSvcAtt = sc.reduce((a, s) => a + s.prevSvcAttended, 0), pSvcTot = sc.reduce((a, s) => a + s.prevSvcTotal, 0);
+  const pGrpAtt = sc.reduce((a, s) => a + s.prevGrpAttended, 0), pGrpTot = sc.reduce((a, s) => a + s.prevGrpTotal, 0);
+  if (pSvcTot > 0 || pGrpTot > 0) {
+    const pSvcUniq = sc.filter(s => s.prevSvcAttended > 0).length;
+    const pSvcRun = sc.filter(s => s.prevSvcTotal > 0).length ? Math.max(...sc.filter(s => s.prevSvcTotal > 0).map(s => s.prevSvcTotal)) : 0;
+    const pSvcAvg = pSvcRun > 0 ? Math.round(pSvcAtt / pSvcRun) : 0;
+    const pGrpEnr = sc.filter(s => s.prevGrpTotal > 0);
+    const pGrpUniq = sc.filter(s => s.prevGrpAttended > 0).length;
+    const pGrpRun = pGrpEnr.length ? Math.max(...pGrpEnr.map(s => s.prevGrpTotal)) : 0;
+    const pGrpAvg = pGrpRun > 0 ? Math.round(pGrpAtt / pGrpRun) : 0;
+    body += `<table style="width:100%;border-collapse:collapse;table-layout:fixed;margin-top:5px"><colgroup><col style="width:44%"><col style="width:28%"><col style="width:28%"></colgroup>`;
+    body += `<thead><tr>
+      <th style="font-size:7px;font-weight:700;opacity:.3;text-transform:uppercase;letter-spacing:.04em;text-align:left;padding-bottom:2px">Prev term</th>
+      <th style="font-size:7px;font-weight:700;opacity:.3;text-transform:uppercase;letter-spacing:.04em;text-align:center;padding-bottom:2px">Unique</th>
+      <th style="font-size:7px;font-weight:700;opacity:.3;text-transform:uppercase;letter-spacing:.04em;text-align:center;padding-bottom:2px">Avg/wk</th>
+    </tr></thead><tbody>`;
+    if (pSvcTot > 0) body += `<tr style="background:rgba(255,255,255,.06)"><td style="font-size:10px;font-weight:800;opacity:.45;padding:3px 6px;border-radius:6px 0 0 6px;white-space:nowrap">Youth <span style="opacity:.6">(${pSvcRun})</span></td><td style="text-align:center;padding:3px 4px"><span style="font-size:13px;font-weight:800;opacity:.6">${pSvcUniq}</span></td><td style="text-align:center;padding:3px 4px;border-radius:0 6px 6px 0"><span style="font-size:13px;font-weight:800;opacity:.6">${pSvcAvg}</span></td></tr>`;
+    if (pGrpTot > 0) body += `<tr style="background:rgba(255,255,255,.03)"><td style="font-size:10px;font-weight:800;opacity:.4;padding:3px 6px;border-radius:6px 0 0 6px;white-space:nowrap">Groups <span style="opacity:.6">(${pGrpRun})</span></td><td style="text-align:center;padding:3px 4px"><span style="font-size:13px;font-weight:800;opacity:.5">${pGrpUniq}</span></td><td style="text-align:center;padding:3px 4px;border-radius:0 6px 6px 0"><span style="font-size:13px;font-weight:800;opacity:.5">${pGrpAvg}</span></td></tr>`;
+    body += `</tbody></table>`;
+  }
+  body += `</div>`;
 
   if (stats) {
-    // First-run guidance for admin with no data
-    if (u.role === 'admin' && stats.ministryTotal === 0) {
-      body += `<div class="first-run">
-        <h3>👋 Welcome — let's get started</h3>
-        <div class="first-run-step"><div class="first-run-num">1</div><div><strong>Import attendance data</strong><br><span style="font-size:13px;color:var(--ink-mid)">Upload a CSV from your attendance system via <a onclick="go('import')" style="color:var(--accent-dark);cursor:pointer;text-decoration:underline">Import</a></span></div></div>
-        <div class="first-run-step"><div class="first-run-num">2</div><div><strong>Add grade leaders</strong><br><span style="font-size:13px;color:var(--ink-mid)">Ask each grade login to add their leaders, or add them as admin via <a onclick="go('leaders')" style="color:var(--accent-dark);cursor:pointer;text-decoration:underline">Leaders</a></span></div></div>
-        <div class="first-run-step"><div class="first-run-num">3</div><div><strong>Allocate students</strong><br><span style="font-size:13px;color:var(--ink-mid)">Use <a onclick="go('leaders')" style="color:var(--accent-dark);cursor:pointer;text-decoration:underline">Leaders</a> to assign students to leaders using the search picker</span></div></div>
-      </div>`;
-    }
-
-    body += `<div class="stat-grid">
-      <div class="stat"><div class="stat-v">${stats.ministryTotal}</div><div class="stat-l">Students</div></div>
-      <div class="stat"><div class="stat-v" style="color:var(--success)">${stats.allocatedTotal}</div><div class="stat-l">Allocated</div></div>
-      <div class="stat"><div class="stat-v" style="color:var(--warn)">${stats.unallocatedTotal}</div><div class="stat-l">Unallocated</div></div>
-      <div class="stat"><div class="stat-v" style="color:var(--danger)">${stats.atRiskTotal}</div><div class="stat-l">At Risk</div></div>
-    </div>`;
-
     if (stats.unallocatedTotal === 0 && stats.ministryTotal > 0) {
       body += '<div class="alert al-ok">✅ All students are allocated!</div>';
     }
-
-    // Change 7: last import summary card
+    if (u.role === 'admin' && stats.ministryTotal === 0) {
+      body += `<div class="first-run">
+        <h3>👋 Welcome — let's get started</h3>
+        <div class="first-run-step"><div class="first-run-num">1</div><div><strong>Import attendance data</strong><br><span style="font-size:13px;color:var(--ink-mid)">Upload a CSV via <a onclick="go('import')" style="color:var(--accent-dark);cursor:pointer;text-decoration:underline">Import</a></span></div></div>
+        <div class="first-run-step"><div class="first-run-num">2</div><div><strong>Add grade leaders</strong><br><span style="font-size:13px;color:var(--ink-mid)">Add them via <a onclick="go('leaders')" style="color:var(--accent-dark);cursor:pointer;text-decoration:underline">Leaders</a></span></div></div>
+        <div class="first-run-step"><div class="first-run-num">3</div><div><strong>Allocate students</strong><br><span style="font-size:13px;color:var(--ink-mid)">Assign students to leaders using the search picker</span></div></div>
+      </div>`;
+    }
     if (importHistory && importHistory.length > 0) {
       const last = importHistory[0];
       const d = new Date(last.importedAt);
-      const dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+      const dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       body += `<div class="card" style="padding:12px 14px;margin-bottom:12px">
         <div style="font-size:11px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Last Import</div>
         <div style="font-size:14px;font-weight:600">${last.filename}</div>
@@ -636,84 +731,69 @@ async function renderHome() {
       </div>`;
     }
 
-    const visQuads = (stats.byQuad || []).filter(q => q.totalStudents > 0);
-    if (visQuads.length) {
-      body += '<div class="sh">By Quad</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">';
-      for (const q of visQuads) {
-        const pct = q.totalStudents > 0 ? Math.round(q.allocatedStudents / q.totalStudents * 100) : 0;
-        body += `<div class="qcard ${q.quad}">
-          <div style="font-size:11px;font-weight:700;color:var(--ink-mid);margin-bottom:3px">${q.label}</div>
-          <div style="font-size:22px;font-weight:800">${q.totalStudents}</div>
-          <div class="pb"><div class="pb-f ${pct>=80?'fill-g':pct>=50?'fill-a':'fill-r'}" style="width:${pct}%"></div></div>
-          <div style="font-size:11px;color:var(--ink-mid);margin-top:3px">${pct}% alloc · ${q.leaderCount} leader${q.leaderCount!==1?'s':''}${q.atRiskCount?' · ⚠️ '+q.atRiskCount:''}</div>
-        </div>`;
+    // ── Quick action tiles ABOVE the breakdown ──
+    const qa = quickActionItems();
+    if (qa.length) {
+      body += '<div class="sh">Quick Actions</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">';
+      for (const x of qa) {
+        const warn = x.id === 'at-risk' && stats.atRiskTotal > 0;
+        body += `<button class="btn btn-secondary" style="justify-content:flex-start${warn ? ';border-color:var(--danger);color:var(--danger)' : ''}" onclick="go('${x.id}')">${x.icon} ${x.label}</button>`;
       }
       body += '</div>';
     }
 
-    // Grade bar (admin/director/quad can see the grade breakdown)
-    if (['admin','director','quad'].includes(u.role) && stats.byGrade) {
-      const visGrades = stats.byGrade.filter(g => g.totalStudents > 0);
-      if (visGrades.length) {
-        body += '<div class="sh">By Grade</div><div class="card" style="padding:12px">';
-        for (const g of visGrades) {
-          const pct = g.totalStudents > 0 ? Math.round(g.allocatedStudents / g.totalStudents * 100) : 0;
-          body += `<div style="display:flex;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid var(--paper-dark)">
-            <div style="width:60px;font-size:13px;font-weight:700">Grade ${g.grade}</div>
-            <div style="flex:1"><div class="pb"><div class="pb-f ${pct>=80?'fill-g':pct>=50?'fill-a':'fill-r'}" style="width:${pct}%"></div></div></div>
-            <div style="font-size:12px;color:var(--ink-mid);width:90px;text-align:right">${g.allocatedStudents}/${g.totalStudents} (${pct}%)${g.atRiskCount?' ⚠️'+g.atRiskCount:''}</div>
-          </div>`;
-        }
-        body += '</div>';
-      }
-    }
-
-    // Grade login: "My Leaders" widget — most important weekly view
     if (u.role === 'grade') {
-      try {
-        const [leaders, allocsRaw] = await Promise.all([API.get('/leaders'), API.get('/allocations')]);
-        if (leaders.length) {
-          body += '<div class="sh">My Leaders</div>';
-          body += '<div class="my-leaders-card">';
-          for (const l of leaders) {
-            const n = allocsRaw.filter(a => a.leaderId === l.id).length;
-            const hasAtRisk = allocsRaw.some(a => {
-              if (a.leaderId !== l.id) return false;
-              const s = stats; // just use stats for quick check
-              return false; // we'll indicate count only
-            });
-            const countCls = n === 0 ? 'warn' : '';
-            body += `<div class="ml-leader-row" onclick="showLeaderDetail('${l.id}')" style="cursor:pointer">
-              <div style="flex:1">
-                <div style="font-weight:600;font-size:14px">${l.fullName}</div>
-                <div style="font-size:12px;color:var(--ink-mid)">${l.gender||'any'} · Gr ${l.grades?.join(', ')||'All'}</div>
-              </div>
-              <span class="ml-count-badge ${countCls}">${n} student${n!==1?'s':''}</span>
-              <span style="color:var(--ink-faint);margin-left:6px">›</span>
-            </div>`;
+      // Compact 4-column allocation strip
+      body += '<div class="sh">Allocation Summary</div>';
+      body += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:16px">';
+      body += `<div class="stat"><div class="stat-v">${stats.ministryTotal}</div><div class="stat-l">Total</div></div>`;
+      body += `<div class="stat"><div class="stat-v" style="color:var(--success)">${stats.allocatedTotal}</div><div class="stat-l">Alloc</div></div>`;
+      body += `<div class="stat"><div class="stat-v" style="color:var(--warn)">${stats.unallocatedTotal}</div><div class="stat-l">Pending</div></div>`;
+      body += `<div class="stat"><div class="stat-v" style="color:var(--danger)">${stats.atRiskTotal}</div><div class="stat-l">At Risk</div></div>`;
+      body += '</div>';
+    } else {
+      // Director/Admin: Attendance by Quad — tap to expand per-grade rows
+      if (['admin', 'director'].includes(u.role)) {
+        const vq = (stats.byQuad || []).filter(q => q.totalStudents > 0);
+        if (vq.length) {
+          body += '<div class="sh">Attendance by Quad</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">';
+          for (const q of vq) {
+            const open = _homeQuadOpen === q.quad;
+            const qStud = sc.filter(s => s.quad === q.quad);
+            let gradeRows = '';
+            if (open) {
+              gradeRows = '<div style="margin-top:8px">';
+              for (const gr of _hQuadGrades(q.quad)) gradeRows += _hGradeMini('Yr ' + gr, qStud.filter(s => s.grade === gr), _hGradeAvg(trends, gr));
+              gradeRows += '</div>';
+            }
+            body += _hAttTile(q.label, qStud, _hQuadAvg(trends, q.quad), { click: `toggleHomeQuad('${q.quad}')`, chev: open, span: open, gradeRows });
           }
-          body += `<button class="btn btn-primary btn-sm btn-full" style="margin-top:12px" onclick="go('leaders')">🔗 Allocate Students</button>`;
           body += '</div>';
         }
-      } catch {}
+      }
+      // Quad: Attendance by Grade tiles (their bracket)
+      if (u.role === 'quad') {
+        body += '<div class="sh">Attendance by Grade</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">';
+        for (const gr of _hQuadGrades(u.quad)) body += _hAttTile('Yr ' + gr, sc.filter(s => s.grade === gr), _hGradeAvg(trends, gr));
+        body += '</div>';
+      }
+      // Allocation by Grade bars
+      if (['admin', 'director', 'quad'].includes(u.role) && stats.byGrade) {
+        const vg = stats.byGrade.filter(g => g.totalStudents > 0);
+        if (vg.length) {
+          body += '<div class="sh">Allocation by Grade</div><div class="card" style="padding:12px">';
+          for (const g of vg) {
+            const pct = g.totalStudents > 0 ? Math.round(g.allocatedStudents / g.totalStudents * 100) : 0;
+            body += `<div style="display:flex;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid var(--paper-dark)">
+              <div style="width:60px;font-size:13px;font-weight:700">Grade ${g.grade}</div>
+              <div style="flex:1"><div class="pb"><div class="pb-f ${pct >= 80 ? 'fill-g' : pct >= 50 ? 'fill-a' : 'fill-r'}" style="width:${pct}%"></div></div></div>
+              <div style="font-size:12px;color:var(--ink-mid);width:90px;text-align:right">${g.allocatedStudents}/${g.totalStudents} (${pct}%)${g.atRiskCount ? ' ⚠️' + g.atRiskCount : ''}</div>
+            </div>`;
+          }
+          body += '</div>';
+        }
+      }
     }
-
-    body += '<div class="sh">Quick Actions</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
-    if (['grade','director','admin'].includes(u.role)) {
-      body += `<button class="btn btn-secondary" style="justify-content:flex-start" onclick="go('leaders')">👥 Leaders</button>
-               <button class="btn btn-secondary" style="justify-content:flex-start" onclick="go('my-students')">🎯 My Students</button>`;
-    }
-    if (u.role === 'quad') {
-      body += `<button class="btn btn-secondary" style="justify-content:flex-start" onclick="go('my-quad')">📊 My Quad</button>`;
-    }
-    body += `<button class="btn btn-secondary" style="justify-content:flex-start" onclick="go('at-risk')">⚠️ At Risk</button>`;
-    if (u.role !== 'quad') {
-      body += `<button class="btn btn-secondary" style="justify-content:flex-start" onclick="go('students')">🎓 Students</button>`;
-    }
-    if (['director','admin'].includes(u.role)) {
-      body += `<button class="btn btn-secondary" style="justify-content:flex-start" onclick="go('import')">📥 Import</button>`;
-    }
-    body += '</div>';
   }
 
   setApp(shell(body));
