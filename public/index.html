@@ -1208,12 +1208,12 @@ function pickerRow(s, isAssigned) {
   const pct = svcPct(s);
   const risk = riskChip(s.atRiskStatus);
   if (isAssigned) {
-    return `<div class="picker-item assigned" role="button" aria-disabled="true">
+    return `<div class="picker-item assigned">
       <div>
         <div class="picker-item-name">✓ ${s.firstName} ${s.lastName}</div>
         <div class="picker-item-meta">Gr ${s.grade||'—'} · ${s.gender}${pct!==null?' · '+pct+'%':''}</div>
       </div>
-      <div class="picker-item-right">${risk}</div>
+      <div class="picker-item-right">${risk}<button onclick="remPick('${s.id}')" title="Remove from this leader" style="margin-left:8px;border:none;background:none;color:var(--danger);font-size:20px;font-weight:700;line-height:1;cursor:pointer">−</button></div>
     </div>`;
   }
   return `<button class="picker-item" onclick="addAllocFromPicker('${s.id}')" aria-label="Assign ${s.firstName} ${s.lastName}">
@@ -1235,11 +1235,29 @@ async function addAllocFromPicker(studentId) {
     // Update the assigned set and re-filter
     window._pickerAssigned.add(studentId);
     filterPicker();
+    pickerSyncBg();
     // Update count badge in card below modal
     const s = _aS.students.find(x => x.id === studentId);
     if (s) toast(`${s.firstName} ${s.lastName} added`);
   } catch (e) { toast(e.message); }
 }
+
+// Remove an allocation from inside the picker (demo: remPick) + keep the page behind in sync.
+async function remPick(studentId) {
+  if (!_pickerCtx) return;
+  const { leaderId } = _pickerCtx;
+  try {
+    await API.del(`/allocations/${studentId}/${leaderId}`);
+    _aS.allocs[studentId] = (_aS.allocs[studentId] || []).filter(id => id !== leaderId);
+    window._pickerAssigned.delete(studentId);
+    filterPicker();
+    pickerSyncBg();
+    const s = _aS.students.find(x => x.id === studentId);
+    if (s) toast(`${s.firstName} ${s.lastName} removed`);
+  } catch (e) { toast(e.message); }
+}
+// Repaint the page behind the open picker so leader counts stay current (demo: pickerSyncBg → render()).
+function pickerSyncBg() { render(); }
 
 async function removeAllocWithUndo(studentId, leaderId, studentName, leaderName) {
   try {
