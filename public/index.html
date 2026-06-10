@@ -1731,20 +1731,59 @@ function toggleSF(type, val) {
 }
 function studSearch(v) { _sS.search = v; renderStudentView(); }
 
+// Student-detail leader assignment (aligned to demo showSD/assignSD/unassignSD)
+let _sdStudent = null, _sdLeaders = [], _sdAssigned = new Set();
+function sdEligibleLeaders() {
+  const s = _sdStudent; if (!s) return [];
+  return _sdLeaders.filter(l => !_sdAssigned.has(l.id)
+    && (!l.gender || l.gender === s.gender)
+    && (!l.grades || l.grades.length === 0 || l.grades.includes(s.grade)));
+}
+function sdLeaderSearch(sid) {
+  const q = ((document.getElementById('sd-lq') || {}).value || '').toLowerCase().trim();
+  let list = sdEligibleLeaders();
+  if (q) list = list.filter(l => l.fullName.toLowerCase().includes(q));
+  list = list.slice(0, 12);
+  const el = document.getElementById('sd-llist'); if (!el) return;
+  if (!list.length) {
+    el.innerHTML = `<div style="text-align:center;padding:14px;color:var(--ink-faint);font-size:13px">${q ? 'No matching leaders' : 'No eligible leaders for this student'}</div>`;
+    return;
+  }
+  el.innerHTML = list.map(l => `<button onclick="assignSD('${sid}','${l.id}')" style="display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:var(--paper);border:1px solid var(--paper-dark);border-radius:8px;padding:8px 10px;margin-bottom:6px;cursor:pointer">
+    <div style="flex:1"><div style="font-size:14px;font-weight:600">${l.fullName}</div><div style="font-size:11px;color:var(--ink-mid)">${l.gender || 'any gender'} · Yr ${(l.grades || []).join(', ') || 'All'}</div></div>
+    <span style="color:var(--accent);font-size:20px;font-weight:700">+</span></button>`).join('');
+}
+async function assignSD(sid, lid) {
+  try { await API.post('/allocations', { studentId: sid, leaderId: lid }); }
+  catch (e) { toast(e.message || 'Could not assign'); return; }
+  toast('Assigned'); render(); showStudentDetail(sid);
+}
+async function unassignSD(sid, lid) {
+  try { await API.del(`/allocations/${sid}/${lid}`); }
+  catch (e) { toast(e.message || 'Could not remove'); return; }
+  toast('Removed'); render(); showStudentDetail(sid);
+}
+
 async function showStudentDetail(id) {
-  let s, myAllocs;
+  let s, myAllocs, allLeaders = [];
   try {
-    [s, myAllocs] = await Promise.all([
+    [s, myAllocs, allLeaders] = await Promise.all([
       API.get(`/students/${id}`),
       API.get(`/allocations/student/${id}`),
+      API.get('/leaders').catch(() => []),
     ]);
   } catch { toast('Failed to load'); return; }
+  _sdStudent = s; _sdLeaders = allLeaders; _sdAssigned = new Set(myAllocs.map(a => a.leaderId));
+  const canEdit = ['grade', 'quad', 'director', 'admin'].includes(S.user.role);
   const pct = svcPct(s);
   const grpPct = s.grpTotal > 0 ? Math.round(s.grpAttended / s.grpTotal * 100) : null;
 
-  const allocRows = myAllocs.length
-    ? myAllocs.map(a => `<span class="chip c-accent" style="margin:2px">${a.leaderName}</span>`).join('')
-    : '<span style="color:var(--ink-faint);font-size:13px">Not allocated</span>';
+  const assignedHtml = myAllocs.length
+    ? myAllocs.map(a => `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--paper-dark)">
+        <span style="font-size:13px;font-weight:600">${a.leaderName}</span>
+        ${canEdit ? `<button class="btn btn-secondary btn-sm" style="padding:3px 10px;color:var(--danger)" onclick="unassignSD('${s.id}','${a.leaderId}')">Remove</button>` : '<span class="chip c-accent">assigned</span>'}
+      </div>`).join('')
+    : '<p style="color:var(--ink-faint);font-size:13px;padding:8px 0">Not allocated yet</p>';
 
   modal(`
     <div class="mo-title">${s.firstName} ${s.lastName}</div>
@@ -1770,8 +1809,10 @@ async function showStudentDetail(id) {
       </div>
     </div>
 
-    <div class="sh">Leaders Assigned</div>
-    <div style="margin-bottom:14px">${allocRows}</div>
+    <div class="sh">Leader Assignments</div>
+    <div style="margin-bottom:${canEdit?'8px':'14px'}">${assignedHtml}</div>
+    ${canEdit ? `<input id="sd-lq" placeholder="Search a leader to assign…" oninput="sdLeaderSearch('${s.id}')" style="width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid var(--paper-dark);border-radius:8px;margin-bottom:6px;font-size:14px">
+    <div id="sd-llist" style="margin-bottom:14px"></div>` : ''}
 
     ${s.mobile||s.parentPhone?`
     <div class="sh">Contact</div>
@@ -1784,6 +1825,7 @@ async function showStudentDetail(id) {
       <button class="btn btn-secondary btn-sm" onclick="closeModal();go('leaders')">Allocate →</button>
       <button class="btn btn-secondary btn-sm" onclick="closeModal()">Close</button>
     </div>`);
+  if (canEdit) sdLeaderSearch(id);
 }
 
 // ============================================================
