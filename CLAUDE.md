@@ -10,8 +10,10 @@ Guidance for Claude Code when working in this package.
 > `allocation-exec.html` and `allocation-training.html`). All demos were consolidated
 > into the sibling **`youth app demo/`** folder, which is now the Vercel deploy source
 > (CLI deploys — see Project-4 CLAUDE.md). The old local `demo-site/` snapshot in this
-> folder has been **removed** (it was a stale duplicate). The "Demo-site UI patterns"
-> below track the deployed version, which `public/index.html` has been aligned to.
+> folder has been **removed** (it was a stale duplicate). `public/index.html` has been
+> **aligned** to that demo; the demo's UI conventions are documented in
+> `../youth app demo/CLAUDE.md` (see the "Demo-site UI patterns → moved" note below for
+> where the real SPA diverges).
 
 ## What this is
 
