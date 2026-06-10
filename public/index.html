@@ -1,0 +1,2436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#6366f1">
+<title>Youth Allocation</title>
+<style>
+:root{
+  --accent:#6366f1;--accent-dark:#4f46e5;--accent-light:#e0e7ff;
+  --danger:#ef4444;--danger-light:#fee2e2;--warn:#f59e0b;--warn-light:#fef3c7;
+  --success:#10b981;--success-light:#d1fae5;
+  --ink:#111827;--ink-mid:#6b7280;--ink-faint:#9ca3af;
+  --paper:#f9fafb;--paper-card:#ffffff;--paper-dark:#e5e7eb;
+  --radius:12px;--radius-sm:8px;
+  --shadow:0 1px 3px rgba(0,0,0,.10),0 1px 2px rgba(0,0,0,.06);
+  --shadow-md:0 4px 6px rgba(0,0,0,.07),0 2px 4px rgba(0,0,0,.06);
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;-webkit-text-size-adjust:100%}
+body{font-family:var(--font);color:var(--ink);background:var(--paper);min-height:100vh;overflow-x:hidden}
+button{cursor:pointer;border:none;background:none;font-family:inherit;font-size:inherit}
+input,select,textarea{font-family:inherit;font-size:inherit}
+#app{display:flex;flex-direction:column;min-height:100vh}
+
+/* Header */
+.hdr{background:var(--accent);color:#fff;padding:0 16px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:var(--shadow-md)}
+.hdr h1{font-size:17px;font-weight:700}
+.hdr-meta{display:flex;align-items:center;gap:10px}
+.role-badge{background:rgba(255,255,255,.2);border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600;text-transform:uppercase;white-space:nowrap}
+.btn-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.15);color:#fff;cursor:pointer;flex-shrink:0}
+.btn-icon:hover{background:rgba(255,255,255,.25)}
+@media(min-width:768px){.hdr{padding:0 28px;height:64px}.hdr h1{font-size:20px}}
+
+/* Desktop nav */
+.desk-nav{display:none}
+@media(min-width:768px){.desk-nav{display:flex;gap:4px}}
+.desk-nav a{padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;color:rgba(255,255,255,.75);cursor:pointer;transition:all .15s}
+.desk-nav a.on,.desk-nav a:hover{background:rgba(255,255,255,.2);color:#fff}
+
+/* Bottom nav */
+.bot-nav{display:flex;background:var(--paper-card);border-top:1px solid var(--paper-dark);padding:8px 0 calc(8px + var(--safe-b));position:sticky;bottom:0;z-index:100}
+.bot-nav a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:9px;font-weight:600;color:var(--ink-faint);text-transform:uppercase;padding:4px 2px;cursor:pointer;transition:color .15s}
+.bot-nav a.on{color:var(--accent)}
+.bot-nav a span.ni{font-size:20px;line-height:1}
+@media(min-width:768px){.bot-nav{display:none}}
+
+/* Page */
+.pg{flex:1;padding:16px;max-width:680px;margin:0 auto;width:100%}
+@media(min-width:768px){.pg{padding:24px;max-width:1000px}}
+
+/* Cards */
+.card{background:var(--paper-card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:12px}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.card-title{font-size:15px;font-weight:700}
+.card-sub{font-size:12px;color:var(--ink-mid);margin-top:2px}
+
+/* Stat grid */
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:20px}
+@media(min-width:480px){.stat-grid{grid-template-columns:repeat(4,1fr)}}
+.stat{background:var(--paper-card);border-radius:var(--radius-sm);box-shadow:var(--shadow);padding:14px;text-align:center}
+.stat-v{font-size:30px;font-weight:800;color:var(--accent);line-height:1}
+.stat-l{font-size:10px;font-weight:700;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;border:none;white-space:nowrap}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:var(--accent-dark)}
+.btn-secondary{background:var(--paper-dark);color:var(--ink)}.btn-secondary:hover{background:#d1d5db}
+.btn-danger{background:var(--danger);color:#fff}.btn-danger:hover{background:#dc2626}
+.btn-warn{background:var(--warn);color:#fff}
+.btn-sm{padding:7px 12px;font-size:13px;border-radius:6px}
+.btn-ghost{background:transparent;color:var(--ink-mid);padding:6px 8px}.btn-ghost:hover{background:var(--paper-dark);color:var(--ink)}
+.btn-full{width:100%}
+
+/* Forms */
+.fg{margin-bottom:14px}
+.fl{display:block;font-size:12px;font-weight:700;color:var(--ink-mid);margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px}
+.fi,.fs,.ft{width:100%;padding:11px 14px;border:1.5px solid var(--paper-dark);border-radius:var(--radius-sm);font-size:15px;color:var(--ink);background:var(--paper-card);outline:none;transition:border-color .15s;-webkit-appearance:none}
+.fi:focus,.fs:focus,.ft:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-light)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.help-text{font-size:12px;color:var(--ink-faint);margin-top:4px}
+
+/* List items */
+.li{background:var(--paper-card);border-radius:var(--radius-sm);padding:14px;margin-bottom:8px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;transition:box-shadow .15s}
+.li:hover{box-shadow:var(--shadow-md)}
+.li-body{flex:1;min-width:0}
+.li-title{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.li-sub{font-size:12px;color:var(--ink-mid);margin-top:2px}
+.li-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
+
+/* Chips */
+.chip{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:700;line-height:1.5;white-space:nowrap}
+.c-accent{background:var(--accent-light);color:var(--accent-dark)}
+.c-neutral{background:var(--paper-dark);color:var(--ink-mid)}
+.c-success{background:var(--success-light);color:#065f46}
+.c-warn{background:var(--warn-light);color:#92400e}
+.c-danger{background:var(--danger-light);color:#991b1b}
+.quad-g79{background:#fce7f3;color:#9d174d}
+.quad-b79{background:#dbeafe;color:#1e40af}
+.quad-g1012{background:#f3e8ff;color:#6d28d9}
+.quad-b1012{background:#d1fae5;color:#065f46}
+.risk-stopped{color:#7f1d1d;background:#fee2e2}
+.risk-atrisk{color:#92400e;background:#fef3c7}
+.risk-declining{color:#1e3a5f;background:#dbeafe}
+.risk-watch{color:#365314;background:#d9f99d}
+.risk-regular{color:#065f46;background:#d1fae5}
+.risk-new{color:#4c1d95;background:#ede9fe}
+
+/* Leader chips */
+.lc{display:inline-flex;align-items:center;gap:3px;padding:3px 10px 3px 10px;border-radius:20px;background:var(--accent-light);color:var(--accent-dark);font-size:12px;font-weight:600;border:1px solid rgba(99,102,241,.2);margin:2px}
+.lc .rm{padding:0 2px;cursor:pointer;opacity:.6;font-size:14px;line-height:1}.lc .rm:hover{opacity:1;color:var(--danger)}
+
+/* Progress */
+.pb{height:6px;background:var(--paper-dark);border-radius:3px;overflow:hidden;margin-top:5px}
+.pb-f{height:100%;border-radius:3px;transition:width .3s}
+.fill-g{background:var(--success)}.fill-a{background:var(--warn)}.fill-r{background:var(--danger)}
+
+/* Page headers */
+.ph{margin-bottom:16px}
+.ph-title{font-size:22px;font-weight:800;letter-spacing:-.5px}
+.ph-sub{font-size:14px;color:var(--ink-mid);margin-top:4px}
+
+/* Section headers */
+.sh{font-size:10px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.8px;margin:20px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--paper-dark)}
+
+/* Empty state */
+.empty{text-align:center;padding:48px 24px;color:var(--ink-mid)}
+.empty-icon{font-size:48px;margin-bottom:12px;opacity:.4;display:block}
+.empty-title{font-size:16px;font-weight:600}
+.empty-sub{font-size:13px;color:var(--ink-faint);margin-top:6px}
+
+/* Modal */
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:flex;align-items:flex-end;justify-content:center}
+@media(min-width:768px){.mo{align-items:center;padding:24px}}
+.mo-box{background:var(--paper-card);border-radius:var(--radius) var(--radius) 0 0;width:100%;max-width:520px;max-height:94vh;overflow-y:auto;padding:20px}
+@media(min-width:768px){.mo-box{border-radius:var(--radius)}}
+.mo-handle{width:40px;height:4px;background:var(--paper-dark);border-radius:2px;margin:0 auto 16px}
+.mo-title{font-size:18px;font-weight:800;margin-bottom:16px}
+
+/* Filters */
+.filter-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;align-items:center}
+.fc{padding:6px 12px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid var(--paper-dark);background:var(--paper-card);color:var(--ink-mid);cursor:pointer;transition:all .15s}
+.fc.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* Search */
+.sbar{position:relative;margin-bottom:12px}
+.sbar input{width:100%;padding:11px 14px 11px 40px;border:1.5px solid var(--paper-dark);border-radius:var(--radius-sm);font-size:15px;background:var(--paper-card);outline:none;transition:border-color .15s}
+.sbar input:focus{border-color:var(--accent)}
+.sbar .si{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--ink-faint);pointer-events:none}
+
+/* Alerts */
+.alert{padding:12px 14px;border-radius:var(--radius-sm);font-size:13px;margin-bottom:12px;display:flex;align-items:flex-start;gap:8px}
+.al-err{background:var(--danger-light);color:#991b1b}
+.al-ok{background:var(--success-light);color:#065f46}
+.al-info{background:var(--accent-light);color:var(--accent-dark)}
+.al-warn{background:var(--warn-light);color:#92400e}
+
+/* Login */
+.login-pg{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%)}
+.login-card{background:#fff;border-radius:var(--radius);padding:28px;width:100%;max-width:380px;box-shadow:0 20px 40px rgba(0,0,0,.2)}
+.login-logo{text-align:center;margin-bottom:20px}
+.login-logo .icon{font-size:48px;margin-bottom:8px}
+.login-logo h1{font-size:22px;font-weight:800}
+.login-logo p{font-size:13px;color:var(--ink-mid);margin-top:4px}
+
+/* Spinner */
+.spin{width:20px;height:20px;border:2.5px solid var(--paper-dark);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading{display:flex;justify-content:center;padding:40px}
+
+/* Toast */
+#toast{position:fixed;bottom:calc(76px + var(--safe-b));left:50%;transform:translateX(-50%) translateY(10px);background:rgba(17,24,39,.92);color:#fff;padding:10px 18px;border-radius:20px;font-size:14px;font-weight:500;pointer-events:none;opacity:0;transition:all .22s;z-index:300;white-space:nowrap;max-width:92vw;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(min-width:768px){#toast{bottom:24px}}
+
+/* Desktop table */
+@media(min-width:768px){
+  .dt{width:100%;border-collapse:collapse;font-size:14px}
+  .dt th{text-align:left;padding:10px 12px;border-bottom:2px solid var(--paper-dark);font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--ink-faint);font-weight:700}
+  .dt td{padding:10px 12px;border-bottom:1px solid var(--paper-dark);vertical-align:middle}
+  .dt tr:hover td{background:var(--paper)}
+}
+
+/* Responsive */
+.mob{display:block}.desk{display:none}
+@media(min-width:768px){.mob{display:none}.desk{display:block}}
+
+/* Quad overview cards */
+.qcard{background:var(--paper-card);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);border-left:4px solid var(--accent)}
+.qcard.g79{border-color:#ec4899}.qcard.b79{border-color:#3b82f6}
+.qcard.g1012{border-color:#8b5cf6}.qcard.b1012{border-color:#10b981}
+
+/* Student detail */
+.detail-row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--paper-dark);font-size:14px}
+.detail-lbl{color:var(--ink-mid);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.3px}
+.detail-val{font-weight:600}
+
+/* Tab bar */
+.tbbar{display:flex;gap:6px;overflow-x:auto;margin-bottom:16px;padding-bottom:2px;-ms-overflow-style:none;scrollbar-width:none}
+.tbbar::-webkit-scrollbar{display:none}
+.tbbtn{flex-shrink:0;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600;color:var(--ink-mid);background:var(--paper-card);border:1.5px solid var(--paper-dark);cursor:pointer}
+.tbbtn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* Audit timeline */
+.audit-entry{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--paper-dark)}
+.audit-entry:last-child{border-bottom:none}
+.audit-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);margin-top:5px;flex-shrink:0}
+.audit-body{flex:1;min-width:0}
+.audit-who{font-size:12px;color:var(--ink-mid);margin-top:2px}
+.audit-detail{font-size:13px;color:var(--ink-mid);margin-top:3px}
+
+/* Destructive section */
+.destructive-section{border:2px solid var(--danger);border-radius:var(--radius-sm);padding:14px;margin-top:10px}
+.destructive-header{color:#991b1b;font-size:13px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:6px}
+
+/* Lock banner */
+.lock-banner{background:var(--warn-light);border:1.5px solid var(--warn);color:#92400e;padding:10px 14px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+
+/* ── SCALE-READY ALLOCATION CARDS ── */
+.alloc-grid{display:grid;grid-template-columns:1fr;gap:12px}
+@media(min-width:540px){.alloc-grid{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:900px){.alloc-grid{grid-template-columns:repeat(3,1fr)}}
+.alloc-leader{background:var(--paper-card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;position:relative;transition:box-shadow .15s;min-width:0;overflow:hidden}
+.alloc-leader:hover{box-shadow:var(--shadow-md)}
+.alloc-leader-name{font-size:16px;font-weight:700;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.alloc-leader-meta{font-size:12px;color:var(--ink-mid);margin-bottom:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.alloc-count-bar{height:8px;background:var(--paper-dark);border-radius:4px;overflow:hidden;margin-bottom:6px}
+.alloc-count-fill{height:100%;border-radius:4px;transition:width .3s}
+.alloc-count-label{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-mid);margin-bottom:12px}
+.alloc-add-btn{width:100%;padding:11px;border-radius:var(--radius-sm);background:var(--accent-light);color:var(--accent-dark);font-size:14px;font-weight:700;cursor:pointer;border:none;transition:background .15s;text-align:center}
+.alloc-add-btn:hover{background:#c7d2fe}
+.alloc-add-btn:disabled{opacity:.45;cursor:not-allowed}
+.alloc-students{margin-top:12px;border-top:1px solid var(--paper-dark);padding-top:10px;max-height:200px;overflow-y:auto}
+.alloc-stud-row{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--paper-dark)}
+.alloc-stud-row:last-child{border-bottom:none}
+.alloc-stud-name{flex:1;font-size:14px;font-weight:600}
+.alloc-stud-meta{font-size:11px;color:var(--ink-mid)}
+
+/* ── STUDENT PICKER MODAL ── */
+.mo-box.picker{max-width:640px;max-height:96vh}
+.picker-search{width:100%;padding:13px 14px 13px 42px;border:2px solid var(--accent);border-radius:var(--radius-sm);font-size:16px;outline:none;background:var(--paper-card);margin-bottom:10px}
+.picker-list{overflow-y:auto;max-height:calc(96vh - 200px)}
+.picker-item{display:flex;align-items:center;gap:12px;padding:13px 12px;border-radius:var(--radius-sm);cursor:pointer;transition:background .1s;border:none;background:none;width:100%;text-align:left;min-height:60px}
+.picker-item:hover,.picker-item:focus{background:var(--accent-light);outline:none}
+.picker-item.assigned{background:var(--success-light);cursor:default}
+.picker-item-name{font-size:15px;font-weight:600;color:var(--ink)}
+.picker-item-meta{font-size:12px;color:var(--ink-mid);margin-top:1px}
+.picker-item-right{margin-left:auto;flex-shrink:0}
+.picker-section{font-size:10px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.8px;padding:8px 12px 4px;border-bottom:1px solid var(--paper-dark)}
+
+/* ── ACCESSIBILITY ── */
+.fc:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.picker-item:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+
+/* ── UNDO TOAST ── */
+#undo-toast{position:fixed;bottom:calc(84px + var(--safe-b));left:50%;transform:translateX(-50%) translateY(10px);background:#1e293b;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;font-weight:500;pointer-events:all;opacity:0;transition:all .22s;z-index:301;display:flex;align-items:center;gap:12px;white-space:nowrap;max-width:92vw}
+#undo-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#undo-toast button{background:rgba(255,255,255,.2);border:none;color:#fff;padding:4px 10px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer}
+#undo-toast button:hover{background:rgba(255,255,255,.35)}
+@media(min-width:768px){#undo-toast{bottom:32px}}
+
+/* ── ROLE BADGE TOOLTIP ── */
+.role-badge{position:relative;cursor:help}
+.role-badge::after{content:attr(data-tip);position:absolute;top:calc(100% + 6px);right:0;background:#1e293b;color:#fff;font-size:11px;padding:4px 8px;border-radius:6px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;font-weight:400;text-transform:none;letter-spacing:0;z-index:200}
+.role-badge:hover::after{opacity:1}
+
+/* ── FIRST-RUN CARD ── */
+.first-run{background:linear-gradient(135deg,var(--accent-light),#f0e7ff);border-radius:var(--radius);padding:20px;margin-bottom:20px;border:1px solid rgba(99,102,241,.2)}
+.first-run h3{font-size:16px;font-weight:800;margin-bottom:10px;color:var(--accent-dark)}
+.first-run-step{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
+.first-run-num{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+
+/* ── MY LEADERS WIDGET ── */
+.my-leaders-card{background:var(--paper-card);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;margin-bottom:12px}
+.ml-leader-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--paper-dark)}
+.ml-leader-row:last-child{border-bottom:none}
+.ml-count-badge{background:var(--accent-light);color:var(--accent-dark);border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700;flex-shrink:0}
+.ml-count-badge.warn{background:var(--warn-light);color:#92400e}
+
+/* ── ADMIN ROLE GROUP ── */
+.role-group{margin-bottom:16px}
+.role-group-header{font-size:10px;font-weight:800;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.8px;padding:6px 0 8px;border-bottom:1px solid var(--paper-dark);margin-bottom:8px}
+
+/* ── TRENDS ── */
+.cchart{display:flex;align-items:flex-end;gap:3px;height:68px;margin:8px 0}
+.ccol{display:flex;flex-direction:column;align-items:center;flex:1;min-width:0}
+.ccol-bar{width:100%;border-radius:3px 3px 0 0;min-height:4px;background:var(--accent)}
+.ccol-bar.lo{background:var(--warn)}.ccol-bar.cr{background:var(--danger)}
+.ccol-lbl{font-size:9px;color:var(--ink-faint);margin-top:3px;white-space:nowrap}
+.tbar-wrap{display:flex;flex-direction:column;gap:4px}
+.tbar-row{display:flex;align-items:center;gap:8px}
+.tbar-lbl{width:28px;text-align:right;color:var(--ink-mid);font-weight:700;flex:none;font-size:11px}
+.tbar-track{flex:1;height:8px;background:var(--paper-dark);border-radius:4px;overflow:hidden}
+.tbar-fill{height:100%;border-radius:4px;background:var(--accent)}
+.tbar-fill.low{background:var(--warn)}.tbar-fill.crit{background:var(--danger)}
+.tbar-val{width:36px;text-align:right;font-size:11px;font-weight:700;color:var(--ink-mid)}
+.tr-up{background:var(--success-light);color:#065f46;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700}
+.tr-dn{background:var(--danger-light);color:#991b1b;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700}
+.tr-st{background:var(--paper-dark);color:var(--ink-mid);border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700}
+.tstat{display:grid;gap:6px;margin-top:10px}
+.tstat-cell{text-align:center;padding:10px 6px;background:var(--paper);border-radius:var(--radius-sm)}
+.tstat-v{font-size:1.5rem;font-weight:800;color:var(--ink);line-height:1}
+.tstat-l{font-size:10px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.4px;margin-top:3px}
+.tstat-p{font-size:10px;color:var(--ink-faint);opacity:.6;margin-top:3px}
+
+/* ── TWO-LINE NAV LABEL ── */
+.ni-lbl{display:flex;flex-direction:column;align-items:center;line-height:1.15}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+<div id="undo-toast"></div>
+<div id="modal-root"></div>
+<script>
+// ============================================================
+// API ADAPTER
+// ============================================================
+const API = (() => {
+  let _t = localStorage.getItem('yap_token') || null;
+  const hdr = () => ({ 'Content-Type': 'application/json', ...(_t ? { Authorization: `Bearer ${_t}` } : {}) });
+  async function r(method, path, body) {
+    const res = await fetch(path, { method, headers: hdr(), ...(body !== undefined ? { body: JSON.stringify(body) } : {}) });
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.message || res.statusText); }
+    return res.json();
+  }
+  return {
+    setToken(t) { _t = t; t ? localStorage.setItem('yap_token', t) : localStorage.removeItem('yap_token'); },
+    get token() { return _t; },
+    get: (p) => r('GET', p),
+    post: (p, b) => r('POST', p, b),
+    patch: (p, b) => r('PATCH', p, b),
+    del: (p) => r('DELETE', p),
+  };
+})();
+
+// ============================================================
+// STATE & ROUTING
+// ============================================================
+const S = { user: null, page: 'home', settings: {} };
+function go(page) { S.page = page; render(); }
+function toast(msg, dur = 2500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), dur);
+}
+function modal(html, onClose) {
+  const r = document.getElementById('modal-root');
+  r.innerHTML = `<div class="mo" id="mo-overlay"><div class="mo-box"><div class="mo-handle"></div>${html}</div></div>`;
+  r._onClose = onClose;
+  r.querySelector('#mo-overlay').addEventListener('click', e => { if (e.target.id === 'mo-overlay') closeModal(); });
+}
+function closeModal() { const r = document.getElementById('modal-root'); if (r._onClose) r._onClose(); r.innerHTML = ''; r._onClose = null; }
+function setApp(h) { document.getElementById('app').innerHTML = h; }
+
+// ============================================================
+// HELPERS
+// ============================================================
+const QUAD_LABELS = { g79:'Girls Yr 7–9', b79:'Boys Yr 7–9', g1012:'Girls Yr 10–12', b1012:'Boys Yr 10–12' };
+function quadLabel(q) { return QUAD_LABELS[q] || q; }
+const ROLE_TIPS = {
+  grade: (u) => `Grade ${u.grade} login — manages leaders and allocations for Year ${u.grade}`,
+  quad:  (u) => `${QUAD_LABELS[u.quad]||u.quad} login — read-only overview of your quad`,
+  director: () => 'Director — full ministry access, can import data',
+  admin: () => 'Admin — full access including settings and accounts',
+};
+function roleBadge(u) {
+  if (!u) return '';
+  let label, tip;
+  if (u.role === 'grade') { label = `Grade ${u.grade}`; }
+  else if (u.role === 'quad') { label = quadLabel(u.quad); }
+  else { label = u.role.charAt(0).toUpperCase() + u.role.slice(1); }
+  tip = (ROLE_TIPS[u.role]||(() => ''))(u);
+  return `<span class="role-badge" data-tip="${tip}">${label}</span>`;
+}
+function roleBadgeInner(u) {
+  // Returns just the label string for use inside shell() where we can't return HTML
+  if (!u) return '';
+  if (u.role === 'grade') return `Grade ${u.grade}`;
+  if (u.role === 'quad') return quadLabel(u.quad);
+  return u.role.charAt(0).toUpperCase() + u.role.slice(1);
+}
+
+// ── UNDO SYSTEM ──
+const _undo = { pending: null, timer: null };
+function showUndoToast(msg, undoFn) {
+  const el = document.getElementById('undo-toast');
+  if (_undo.timer) clearTimeout(_undo.timer);
+  _undo.pending = undoFn;
+  el.innerHTML = `<span>${msg}</span><button onclick="execUndo()">Undo</button>`;
+  el.classList.add('show');
+  _undo.timer = setTimeout(() => { el.classList.remove('show'); _undo.pending = null; }, 5000);
+}
+function execUndo() {
+  const el = document.getElementById('undo-toast');
+  el.classList.remove('show');
+  if (_undo.pending) { _undo.pending(); _undo.pending = null; }
+}
+
+// ── ESCAPE KEY CLOSES MODALS ──
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const root = document.getElementById('modal-root');
+    if (root && root.innerHTML) closeModal();
+  }
+});
+function quadChip(q) {
+  if (!q) return '';
+  return `<span class="chip quad-${q}">${QUAD_LABELS[q] || q}</span>`;
+}
+function riskChip(s) {
+  if (!s || s === 'regular') return '';
+  const m = { stopped:['Stopped','risk-stopped'], atrisk:['At Risk','risk-atrisk'], declining:['Declining','risk-declining'], watch:['Watch','risk-watch'], new:['New','risk-new'] };
+  const [l, c] = m[s] || [s, 'c-neutral'];
+  return `<span class="chip ${c}">${l}</span>`;
+}
+function statusChip(status) {
+  return status === 'active'
+    ? '<span class="chip c-success">Active</span>'
+    : '<span class="chip c-neutral">Inactive</span>';
+}
+function svcPct(s) { return s.svcTotal > 0 ? Math.round(s.svcAttended / s.svcTotal * 100) : null; }
+function pBar(pct) {
+  const cls = pct >= 70 ? 'fill-g' : pct >= 40 ? 'fill-a' : 'fill-r';
+  return `<div class="pb"><div class="pb-f ${cls}" style="width:${pct}%"></div></div>`;
+}
+function fmtDate(d) {
+  if (!d) return '—';
+  const dt = new Date(d);
+  return dt.getDate()+'/'+(dt.getMonth()+1)+' '+String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0');
+}
+function fmtDM(d) {
+  if (!d) return '—';
+  const dt = new Date(d);
+  return dt.getUTCDate()+'/'+(dt.getUTCMonth()+1);
+}
+
+function navItems() {
+  const u = S.user; if (!u) return [];
+  // Grade: Home | My Students | Trends | At Risk  (Leaders & Alloc + Student Search in quick actions)
+  if (u.role === 'grade') return [
+    { id:'home', icon:'🏠', label:'Home', mbl:'Home' },
+    { id:'my-students', icon:'👥', label:'My Students', mbl:'My Students' },
+    { id:'trends', icon:'📈', label:'Trends', mbl:'Trends' },
+    { id:'at-risk', icon:'⚠️', label:'At Risk', mbl:'At Risk' },
+    // quick actions:
+    { id:'leaders', icon:'👥', label:'Leaders & Alloc', mbl:'Leaders & Alloc' },
+    { id:'students', icon:'🎓', label:'Student Search', mbl:'Student Search' },
+  ];
+  // Quad: Home | Leaders & Alloc | Trends | At Risk
+  if (u.role === 'quad') return [
+    { id:'home', icon:'🏠', label:'Home', mbl:'Home' },
+    { id:'leaders', icon:'👥', label:'Leaders & Alloc', mbl:'<span class="ni-lbl"><span>Leaders</span><span style="opacity:.75;font-size:8px">&amp; Alloc</span></span>' },
+    { id:'trends', icon:'📈', label:'Trends', mbl:'Trends' },
+    { id:'at-risk', icon:'⚠️', label:'At Risk', mbl:'At Risk' },
+    // quick actions:
+    { id:'students', icon:'🎓', label:'Student Search', mbl:'Student Search' },
+    { id:'my-students', icon:'👥', label:'My Students', mbl:'My Students' },
+  ];
+  // Admin: Home | Leaders & Alloc | Trends | At Risk + Student Search, My Students, Import, Admin as quick actions
+  if (u.role === 'admin') return [
+    { id:'home', icon:'🏠', label:'Home', mbl:'Home' },
+    { id:'leaders', icon:'👥', label:'Leaders & Alloc', mbl:'<span class="ni-lbl"><span>Leaders</span><span style="opacity:.75;font-size:8px">&amp; Alloc</span></span>' },
+    { id:'trends', icon:'📈', label:'Trends', mbl:'Trends' },
+    { id:'at-risk', icon:'⚠️', label:'At Risk', mbl:'At Risk' },
+    { id:'students', icon:'🎓', label:'Student Search', mbl:'Student Search' },
+    { id:'my-students', icon:'👥', label:'My Students', mbl:'My Students' },
+    { id:'import', icon:'📥', label:'Import', mbl:'Import' },
+    { id:'admin', icon:'⚙️', label:'Admin', mbl:'Admin' },
+  ];
+  // Director: same as admin minus admin tile
+  return [
+    { id:'home', icon:'🏠', label:'Home', mbl:'Home' },
+    { id:'leaders', icon:'👥', label:'Leaders & Alloc', mbl:'<span class="ni-lbl"><span>Leaders</span><span style="opacity:.75;font-size:8px">&amp; Alloc</span></span>' },
+    { id:'trends', icon:'📈', label:'Trends', mbl:'Trends' },
+    { id:'at-risk', icon:'⚠️', label:'At Risk', mbl:'At Risk' },
+    { id:'students', icon:'🎓', label:'Student Search', mbl:'Student Search' },
+    { id:'my-students', icon:'👥', label:'My Students', mbl:'My Students' },
+    { id:'import', icon:'📥', label:'Import', mbl:'Import' },
+  ];
+}
+function bottomNavItems() { return navItems().slice(0, 4); }
+function quickActionItems() { return navItems().slice(4); }
+
+function shell(body) {
+  const u = S.user;
+  const badge = roleBadge(u);
+  const items = navItems();
+  const bn = bottomNavItems();
+  const cur = S.page;
+  const dlinks = items.map(it => `<a class="${cur===it.id?'on':''}" onclick="go('${it.id}')">${it.icon} ${it.label}</a>`).join('');
+  const mlinks = bn.map(it => `<a class="${cur===it.id?'on':''}" onclick="go('${it.id}')"><span class="ni">${it.icon}</span>${it.mbl||it.label}</a>`).join('');
+  return `
+    <div class="hdr">
+      <h1>Youth Allocation</h1>
+      <div class="hdr-meta">
+        <nav class="desk-nav">${dlinks}</nav>
+        ${badge}
+        <div class="btn-icon" onclick="doLogout()" title="Sign out" aria-label="Sign out">↩</div>
+      </div>
+    </div>
+    <main class="pg">${body}</main>
+    <nav class="bot-nav">${mlinks}</nav>`;
+}
+
+// ============================================================
+// FILTER STATE PERSISTENCE (Change 1)
+// ============================================================
+function saveAllocFilters() {
+  try {
+    sessionStorage.setItem('yap_alloc_filters', JSON.stringify({
+      gf: [..._aS.gf],
+      df: [..._aS.df],
+      search: _aS.search,
+      unallocOnly: _aS.unallocOnly
+    }));
+  } catch {}
+}
+
+function restoreAllocFilters() {
+  try {
+    const raw = sessionStorage.getItem('yap_alloc_filters');
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (Array.isArray(saved.gf)) _aS.gf = new Set(saved.gf);
+    if (Array.isArray(saved.df)) _aS.df = new Set(saved.df);
+    if (typeof saved.search === 'string') _aS.search = saved.search;
+    if (typeof saved.unallocOnly === 'boolean') _aS.unallocOnly = saved.unallocOnly;
+  } catch {}
+}
+
+// ============================================================
+// AUTH
+// ============================================================
+async function render() {
+  if (!S.user) { renderLogin(); return; }
+  const p = S.page;
+  if (p==='home') await renderHome();
+  else if (p==='leaders') await renderLeaders();
+  else if (p==='allocate') go('leaders'); // merged into leaders
+  else if (p==='my-students') await renderMyStudents();
+  else if (p==='quad-view') go('leaders'); // merged into leaders
+  else if (p==='my-quad') go('leaders');   // merged into leaders
+  else if (p==='at-risk') await renderAtRisk();
+  else if (p==='students') await renderStudents();
+  else if (p==='trends') await renderTrends();
+  else if (p==='import') await renderImport();
+  else if (p==='admin') await renderAdmin();
+  else await renderHome();
+}
+
+function renderLogin() {
+  setApp(`
+    <div class="login-pg">
+      <div class="login-card">
+        <div class="login-logo"><div class="icon">🎯</div><h1>Youth Allocation</h1><p>Sign in to continue</p></div>
+        <div id="lerr"></div>
+        <div class="fg"><label class="fl">Email</label><input class="fi" id="lemail" type="email" placeholder="grade7@youth.ministry" autocomplete="username"></div>
+        <div class="fg"><label class="fl">Password</label><input class="fi" id="lpw" type="password" placeholder="••••••••" autocomplete="current-password"></div>
+        <button class="btn btn-primary btn-full" onclick="doLogin()">Sign In</button>
+        <p style="text-align:center;color:var(--ink-faint);font-size:12px;margin-top:14px">Demo password: demo1234</p>
+      </div>
+    </div>`);
+  document.getElementById('lpw')?.addEventListener('keypress', e => { if (e.key==='Enter') doLogin(); });
+}
+
+async function doLogin() {
+  const email = document.getElementById('lemail')?.value?.trim();
+  const password = document.getElementById('lpw')?.value;
+  const errEl = document.getElementById('lerr');
+  try {
+    const res = await API.post('/auth/login', { email, password });
+    API.setToken(res.token); S.user = res.user; go('home');
+  } catch (e) { errEl.innerHTML = `<div class="alert al-err">${e.message}</div>`; }
+}
+
+async function doLogout() {
+  try { await API.post('/auth/logout', { token: API.token }); } catch {}
+  API.setToken(null); S.user = null; S.page = 'home';
+  _msLeader = null; _trTab = 'svc'; _trGradeOpen = null; _trQuadOpen = null;
+  _arFilter = { grade: null, gender: null };
+  render();
+}
+
+// ============================================================
+// HOME
+// ============================================================
+async function renderHome() {
+  setApp(shell('<div class="loading"><div class="spin"></div></div>'));
+  const u = S.user;
+  let stats, importHistory;
+  try { stats = await API.get('/overview'); } catch {}
+
+  // Change 7: fetch import history for director/admin
+  if (['director','admin'].includes(u.role)) {
+    try { importHistory = await API.get('/import/history'); } catch {}
+  }
+
+  let body = `<div class="ph"><div class="ph-title">👋 ${u.displayName}</div><div class="ph-sub">${roleBadge(u)}</div></div>`;
+
+  if (stats) {
+    // First-run guidance for admin with no data
+    if (u.role === 'admin' && stats.ministryTotal === 0) {
+      body += `<div class="first-run">
+        <h3>👋 Welcome — let's get started</h3>
+        <div class="first-run-step"><div class="first-run-num">1</div><div><strong>Import attendance data</strong><br><span style="font-size:13px;color:var(--ink-mid)">Upload a CSV from your attendance system via <a onclick="go('import')" style="color:var(--accent-dark);cursor:pointer;text-decoration:underline">Import</a></span></div></div>
+        <div class="first-run-step"><div class="first-run-num">2</div><div><strong>Add grade leaders</strong><br><span style="font-size:13px;color:var(--ink-mid)">Ask each grade login to add their leaders, or add them as admin via <a onclick="go('leaders')" style="color:var(--accent-dark);cursor:pointer;text-decoration:underline">Leaders</a></span></div></div>
+        <div class="first-run-step"><div class="first-run-num">3</div><div><strong>Allocate students</strong><br><span style="font-size:13px;color:var(--ink-mid)">Use <a onclick="go('leaders')" style="color:var(--accent-dark);cursor:pointer;text-decoration:underline">Leaders</a> to assign students to leaders using the search picker</span></div></div>
+      </div>`;
+    }
+
+    body += `<div class="stat-grid">
+      <div class="stat"><div class="stat-v">${stats.ministryTotal}</div><div class="stat-l">Students</div></div>
+      <div class="stat"><div class="stat-v" style="color:var(--success)">${stats.allocatedTotal}</div><div class="stat-l">Allocated</div></div>
+      <div class="stat"><div class="stat-v" style="color:var(--warn)">${stats.unallocatedTotal}</div><div class="stat-l">Unallocated</div></div>
+      <div class="stat"><div class="stat-v" style="color:var(--danger)">${stats.atRiskTotal}</div><div class="stat-l">At Risk</div></div>
+    </div>`;
+
+    if (stats.unallocatedTotal === 0 && stats.ministryTotal > 0) {
+      body += '<div class="alert al-ok">✅ All students are allocated!</div>';
+    }
+
+    // Change 7: last import summary card
+    if (importHistory && importHistory.length > 0) {
+      const last = importHistory[0];
+      const d = new Date(last.importedAt);
+      const dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+      body += `<div class="card" style="padding:12px 14px;margin-bottom:12px">
+        <div style="font-size:11px;font-weight:700;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Last Import</div>
+        <div style="font-size:14px;font-weight:600">${last.filename}</div>
+        <div style="font-size:12px;color:var(--ink-mid);margin-top:3px">${dateStr} · ${last.studentsAdded} added, ${last.studentsUpdated} updated</div>
+      </div>`;
+    }
+
+    const visQuads = (stats.byQuad || []).filter(q => q.totalStudents > 0);
+    if (visQuads.length) {
+      body += '<div class="sh">By Quad</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">';
+      for (const q of visQuads) {
+        const pct = q.totalStudents > 0 ? Math.round(q.allocatedStudents / q.totalStudents * 100) : 0;
+        body += `<div class="qcard ${q.quad}">
+          <div style="font-size:11px;font-weight:700;color:var(--ink-mid);margin-bottom:3px">${q.label}</div>
+          <div style="font-size:22px;font-weight:800">${q.totalStudents}</div>
+          <div class="pb"><div class="pb-f ${pct>=80?'fill-g':pct>=50?'fill-a':'fill-r'}" style="width:${pct}%"></div></div>
+          <div style="font-size:11px;color:var(--ink-mid);margin-top:3px">${pct}% alloc · ${q.leaderCount} leader${q.leaderCount!==1?'s':''}${q.atRiskCount?' · ⚠️ '+q.atRiskCount:''}</div>
+        </div>`;
+      }
+      body += '</div>';
+    }
+
+    // Grade bar (admin/director/quad can see the grade breakdown)
+    if (['admin','director','quad'].includes(u.role) && stats.byGrade) {
+      const visGrades = stats.byGrade.filter(g => g.totalStudents > 0);
+      if (visGrades.length) {
+        body += '<div class="sh">By Grade</div><div class="card" style="padding:12px">';
+        for (const g of visGrades) {
+          const pct = g.totalStudents > 0 ? Math.round(g.allocatedStudents / g.totalStudents * 100) : 0;
+          body += `<div style="display:flex;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid var(--paper-dark)">
+            <div style="width:60px;font-size:13px;font-weight:700">Grade ${g.grade}</div>
+            <div style="flex:1"><div class="pb"><div class="pb-f ${pct>=80?'fill-g':pct>=50?'fill-a':'fill-r'}" style="width:${pct}%"></div></div></div>
+            <div style="font-size:12px;color:var(--ink-mid);width:90px;text-align:right">${g.allocatedStudents}/${g.totalStudents} (${pct}%)${g.atRiskCount?' ⚠️'+g.atRiskCount:''}</div>
+          </div>`;
+        }
+        body += '</div>';
+      }
+    }
+
+    // Grade login: "My Leaders" widget — most important weekly view
+    if (u.role === 'grade') {
+      try {
+        const [leaders, allocsRaw] = await Promise.all([API.get('/leaders'), API.get('/allocations')]);
+        if (leaders.length) {
+          body += '<div class="sh">My Leaders</div>';
+          body += '<div class="my-leaders-card">';
+          for (const l of leaders) {
+            const n = allocsRaw.filter(a => a.leaderId === l.id).length;
+            const hasAtRisk = allocsRaw.some(a => {
+              if (a.leaderId !== l.id) return false;
+              const s = stats; // just use stats for quick check
+              return false; // we'll indicate count only
+            });
+            const countCls = n === 0 ? 'warn' : '';
+            body += `<div class="ml-leader-row" onclick="showLeaderDetail('${l.id}')" style="cursor:pointer">
+              <div style="flex:1">
+                <div style="font-weight:600;font-size:14px">${l.fullName}</div>
+                <div style="font-size:12px;color:var(--ink-mid)">${l.gender||'any'} · Gr ${l.grades?.join(', ')||'All'}</div>
+              </div>
+              <span class="ml-count-badge ${countCls}">${n} student${n!==1?'s':''}</span>
+              <span style="color:var(--ink-faint);margin-left:6px">›</span>
+            </div>`;
+          }
+          body += `<button class="btn btn-primary btn-sm btn-full" style="margin-top:12px" onclick="go('leaders')">🔗 Allocate Students</button>`;
+          body += '</div>';
+        }
+      } catch {}
+    }
+
+    body += '<div class="sh">Quick Actions</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+    if (['grade','director','admin'].includes(u.role)) {
+      body += `<button class="btn btn-secondary" style="justify-content:flex-start" onclick="go('leaders')">👥 Leaders</button>
+               <button class="btn btn-secondary" style="justify-content:flex-start" onclick="go('my-students')">🎯 My Students</button>`;
+    }
+    if (u.role === 'quad') {
+      body += `<button class="btn btn-secondary" style="justify-content:flex-start" onclick="go('my-quad')">📊 My Quad</button>`;
+    }
+    body += `<button class="btn btn-secondary" style="justify-content:flex-start" onclick="go('at-risk')">⚠️ At Risk</button>`;
+    if (u.role !== 'quad') {
+      body += `<button class="btn btn-secondary" style="justify-content:flex-start" onclick="go('students')">🎓 Students</button>`;
+    }
+    if (['director','admin'].includes(u.role)) {
+      body += `<button class="btn btn-secondary" style="justify-content:flex-start" onclick="go('import')">📥 Import</button>`;
+    }
+    body += '</div>';
+  }
+
+  setApp(shell(body));
+}
+
+// ============================================================
+// LEADERS
+// ============================================================
+async function renderLeaders() {
+  setApp(shell('<div class="loading"><div class="spin"></div></div>'));
+  const [leaders, allocsRaw] = await Promise.all([
+    API.get('/leaders').catch(() => []),
+    API.get('/allocations').catch(() => []),
+  ]);
+  const countByLeader = {};
+  for (const a of allocsRaw) countByLeader[a.leaderId] = (countByLeader[a.leaderId] || 0) + 1;
+  const u = S.user;
+  const canEdit = ['grade','director','admin'].includes(u.role);
+
+  let body = `<div class="ph"><div style="display:flex;align-items:center;justify-content:space-between">
+    <div><div class="ph-title">Leaders</div><div class="ph-sub">${leaders.length} active</div></div>
+    ${canEdit ? `<button class="btn btn-primary btn-sm" onclick="showAddLeader()">+ Add</button>` : ''}
+  </div></div>`;
+
+  // Change 9: quad read-only info banner
+  if (u.role === 'quad') {
+    body += `<div class="alert al-info">👁 You can view leaders in your quad. Contact a grade login to make changes.</div>`;
+  }
+
+  if (canEdit) {
+    body += `<button class="btn btn-primary btn-full" style="margin-bottom:12px" onclick="go('allocate')">🔗 Allocate Students</button>`;
+  }
+
+  if (!leaders.length) {
+    body += '<div class="empty"><span class="empty-icon">👥</span><div class="empty-title">No leaders yet</div><div class="empty-sub">Add leaders to start allocating students</div></div>';
+  } else {
+    // Mobile cards
+    body += '<div class="mob">';
+    for (const l of leaders) {
+      const assigned = countByLeader[l.id] || 0;
+      const gi = l.gender==='female'?'♀':l.gender==='male'?'♂':'⚥';
+      body += `
+        <div class="li" style="cursor:pointer" onclick="showLeaderDetail('${l.id}')">
+          <div style="width:42px;height:42px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${gi}</div>
+          <div class="li-body">
+            <div class="li-title">${l.fullName}</div>
+            <div class="li-sub">Gr ${l.grades?.join(', ')||'All'} · ${l.gender||'any'} · ${assigned} student${assigned!==1?'s':''}</div>
+          </div>
+          ${canEdit?`<div class="li-right">
+            <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();showEditLeader('${l.id}')">✏️</button>
+            <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();confirmDelLeader('${l.id}','${l.fullName.replace(/'/g,"\\'")}')">🗑</button>
+          </div>`:''}
+        </div>`;
+    }
+    body += '</div>';
+    // Desktop table
+    body += `<div class="desk"><table class="dt"><thead><tr>
+      <th>Name</th><th>Gender</th><th>Grades</th><th>Assigned</th><th></th>
+    </tr></thead><tbody>`;
+    for (const l of leaders) {
+      const assigned = countByLeader[l.id] || 0;
+      body += `<tr style="cursor:pointer" onclick="showLeaderDetail('${l.id}')">
+        <td><strong>${l.fullName}</strong></td>
+        <td>${l.gender||'—'}</td>
+        <td>${l.grades?.length?'Gr '+l.grades.join(', '):'All'}</td>
+        <td><span class="chip ${assigned>0?'c-success':'c-neutral'}">${assigned} student${assigned!==1?'s':''}</span></td>
+        <td onclick="event.stopPropagation()">
+          <button class="btn btn-ghost btn-sm" onclick="showLeaderDetail('${l.id}')">View</button>
+          ${canEdit?`<button class="btn btn-ghost btn-sm" onclick="showEditLeader('${l.id}')">Edit</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="confirmDelLeader('${l.id}','${l.fullName.replace(/'/g,"\\'")}')">Del</button>`:''}
+        </td>
+      </tr>`;
+    }
+    body += '</tbody></table></div>';
+  }
+  setApp(shell(body));
+}
+
+async function showLeaderDetail(id) {
+  let leader, summary;
+  try {
+    [leader, summary] = await Promise.all([
+      API.get(`/leaders/${id}`),
+      API.get(`/allocations/leader/${id}/summary`),
+    ]);
+  } catch { toast('Failed to load leader'); return; }
+  const u = S.user;
+  const canEdit = ['grade','director','admin'].includes(u.role);
+  const students = summary.students || [];
+
+  let studRows = '';
+  for (const s of students) {
+    const pct = s.svcTotal > 0 ? Math.round(s.svcAttended / s.svcTotal * 100) : null;
+    studRows += `<div style="padding:10px 0;border-bottom:1px solid var(--paper-dark);display:flex;align-items:center;gap:10px">
+      <div style="flex:1">
+        <div style="font-weight:600">${s.fullName}</div>
+        <div style="font-size:12px;color:var(--ink-mid)">Gr ${s.grade||'—'} · ${s.gender}</div>
+      </div>
+      ${pct!==null?`<div style="text-align:right">
+        <div style="font-size:12px;font-weight:700">${pct}%</div>
+        <div class="pb" style="width:50px">${pBar(pct)}</div>
+      </div>`:''}
+    </div>`;
+  }
+
+  modal(`
+    <div class="mo-title">${leader.fullName}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+      <span class="chip c-accent">${leader.gender||'any gender'}</span>
+      <span class="chip c-neutral">Gr ${leader.grades?.join(', ')||'All'}</span>
+      <span class="chip ${leader.active?'c-success':'c-neutral'}">${leader.active?'Active':'Inactive'}</span>
+    </div>
+    <div class="sh">Assigned Students (${students.length})</div>
+    ${students.length ? studRows : '<p style="color:var(--ink-faint);font-size:13px;padding:12px 0">No students assigned yet</p>'}
+    <div style="display:flex;gap:8px;margin-top:16px">
+      ${canEdit?`<button class="btn btn-primary btn-sm" onclick="closeModal();go('allocate')">🔗 Allocate</button>`:''}
+      ${canEdit?`<button class="btn btn-secondary btn-sm" onclick="closeModal();showEditLeader('${id}')">✏️ Edit</button>`:''}
+      <button class="btn btn-secondary btn-sm" onclick="closeModal()">Close</button>
+    </div>`);
+}
+
+function showAddLeader() {
+  const u = S.user;
+  const gcbs = [7,8,9,10,11,12].map(g =>
+    `<label style="display:flex;align-items:center;gap:6px;margin-bottom:5px"><input type="checkbox" value="${g}" class="gcb" ${u.role==='grade'&&u.grade===g?'checked disabled':''}> Grade ${g}</label>`
+  ).join('');
+  modal(`
+    <div class="mo-title">Add Leader</div>
+    <div id="le"></div>
+    <div class="fg"><label class="fl">Full Name *</label><input class="fi" id="ln" placeholder="Sarah Mitchell"></div>
+    <div class="fg"><label class="fl">Gender</label><select class="fs" id="lg"><option value="">Any gender</option><option value="female">Female</option><option value="male">Male</option></select></div>
+    ${u.role!=='grade'?`<div class="fg"><label class="fl">Grade Focus (leave blank = all)</label>${gcbs}</div>`:'<p style="font-size:12px;color:var(--ink-mid);margin-bottom:12px">Leader will be scoped to your grade automatically</p>'}
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="submitAddLeader()">Add Leader</button>
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+    </div>`);
+}
+
+async function submitAddLeader() {
+  const name = document.getElementById('ln')?.value?.trim();
+  const gender = document.getElementById('lg')?.value || null;
+  const grades = [...(document.querySelectorAll('.gcb:checked')||[])].map(el => parseInt(el.value,10));
+  const errEl = document.getElementById('le');
+  if (!name) { errEl.innerHTML='<div class="alert al-err">Name is required</div>'; return; }
+  try {
+    await API.post('/leaders', { fullName:name, gender, grades });
+    closeModal(); toast('Leader added'); await renderLeaders();
+  } catch (e) { errEl.innerHTML=`<div class="alert al-err">${e.message}</div>`; }
+}
+
+async function showEditLeader(id) {
+  let l; try { l = await API.get(`/leaders/${id}`); } catch { toast('Not found'); return; }
+  const gcbs = [7,8,9,10,11,12].map(g =>
+    `<label style="display:flex;align-items:center;gap:6px;margin-bottom:5px"><input type="checkbox" value="${g}" class="gcb" ${l.grades?.includes(g)?'checked':''}> Grade ${g}</label>`
+  ).join('');
+  modal(`
+    <div class="mo-title">Edit Leader</div>
+    <div id="le"></div>
+    <div class="fg"><label class="fl">Full Name</label><input class="fi" id="ln" value="${l.fullName}"></div>
+    <div class="fg"><label class="fl">Gender</label><select class="fs" id="lg">
+      <option value="" ${!l.gender?'selected':''}>Any</option>
+      <option value="female" ${l.gender==='female'?'selected':''}>Female</option>
+      <option value="male" ${l.gender==='male'?'selected':''}>Male</option>
+    </select></div>
+    <div class="fg"><label class="fl">Grade Focus</label>${gcbs}</div>
+    <div class="fg"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px"><input type="checkbox" id="la" ${l.active?'checked':''}> Active</label></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="submitEditLeader('${id}')">Save</button>
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+    </div>`);
+}
+
+async function submitEditLeader(id) {
+  const fullName = document.getElementById('ln')?.value?.trim();
+  const gender = document.getElementById('lg')?.value || null;
+  const grades = [...(document.querySelectorAll('.gcb:checked')||[])].map(el => parseInt(el.value,10));
+  const active = document.getElementById('la')?.checked ?? true;
+  const errEl = document.getElementById('le');
+  if (!fullName) { errEl.innerHTML='<div class="alert al-err">Name required</div>'; return; }
+  try {
+    await API.patch(`/leaders/${id}`, { fullName, gender, grades, active });
+    closeModal(); toast('Leader updated'); await renderLeaders();
+  } catch (e) { errEl.innerHTML=`<div class="alert al-err">${e.message}</div>`; }
+}
+
+function confirmDelLeader(id, name) {
+  modal(`<div class="mo-title">Delete Leader?</div>
+    <p style="color:var(--ink-mid);margin-bottom:20px">Delete <strong>${name}</strong> and all their allocations?</p>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-danger" style="flex:1" onclick="API.del('/leaders/${id}').then(()=>{closeModal();toast('Deleted');renderLeaders()}).catch(e=>toast(e.message))">Delete</button>
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+    </div>`);
+}
+
+// ============================================================
+// ALLOCATE  (leader-centric card view — scales to 60+ students)
+// ============================================================
+let _aS = { students:[], leaders:[], allocs:{}, gf:new Set(), df:new Set(), unallocOnly:false };
+// _pickerCtx = { leaderId, leaderGender, leaderName }
+let _pickerCtx = null;
+
+async function renderAllocate() {
+  setApp(shell('<div class="loading"><div class="spin"></div></div>'));
+  await loadAllocData();
+  renderAllocView();
+}
+
+async function loadAllocData() {
+  const [students, leaders, allocsRaw] = await Promise.all([
+    API.get('/students').catch(() => []),
+    API.get('/leaders').catch(() => []),
+    API.get('/allocations').catch(() => []),
+  ]);
+  const allocs = {};
+  for (const a of allocsRaw) { if (!allocs[a.studentId]) allocs[a.studentId]=[]; allocs[a.studentId].push(a.leaderId); }
+  _aS.students = students; _aS.leaders = leaders; _aS.allocs = allocs;
+}
+
+function renderAllocView() {
+  const { students, leaders, allocs, gf, df, unallocOnly } = _aS;
+  const u = S.user;
+
+  // Allocation lock check
+  const lockDate = S.settings?.allocationLockDate;
+  const isLocked = !!(lockDate && new Date() >= new Date(lockDate));
+  const canEdit = (!isLocked || u?.role === 'admin');
+
+  // Filter leaders by grade/gender chips (applied to the leader cards shown)
+  let visLeaders = leaders;
+  if (gf.size) visLeaders = visLeaders.filter(l => l.grades?.some(g => gf.has(g)));
+  if (df.size) visLeaders = visLeaders.filter(l => !l.gender || df.has(l.gender));
+  if (unallocOnly) {
+    // Show only leaders that have at least one unallocated student in their scope
+    visLeaders = visLeaders.filter(l => {
+      const pool = students.filter(s => !l.gender || s.gender === l.gender);
+      return pool.some(s => !(allocs[s.id]?.includes(l.id)));
+    });
+  }
+
+  // Counts
+  const allocatedStudentIds = new Set(Object.keys(allocs).filter(id => allocs[id].length > 0));
+  const totalStudents = students.length;
+  const allocatedCount = allocatedStudentIds.size;
+
+  const gChips = [7,8,9,10,11,12].map(g =>
+    `<button class="fc ${gf.has(g)?'on':''}" onclick="toggleAF('g',${g})" aria-pressed="${gf.has(g)}">${g}</button>`
+  ).join('');
+  const dChips = ['male','female'].map(g =>
+    `<button class="fc ${df.has(g)?'on':''}" onclick="toggleAF('d','${g}')" aria-pressed="${df.has(g)}">${g.charAt(0).toUpperCase()+g.slice(1)}</button>`
+  ).join('');
+
+  let lockBanner = '';
+  if (isLocked) {
+    const lockFmt = new Date(lockDate).toLocaleDateString();
+    lockBanner = `<div class="lock-banner">🔒 Allocations locked as of ${lockFmt}.${u?.role==='admin'?' (Admin can still make changes.)':' Contact admin to make changes.'}</div>`;
+  }
+  const gradeHint = (u?.role === 'grade')
+    ? `<div class="alert al-info" style="margin-bottom:10px">💡 Tap "Add Students" on any leader to search. You can add students from other grades if they match the leader's gender.</div>`
+    : '';
+
+  let body = `
+    <div class="ph">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div>
+          <div class="ph-title">Allocate</div>
+          <div class="ph-sub">${allocatedCount}/${totalStudents} students allocated · ${visLeaders.length} leader${visLeaders.length!==1?'s':''}</div>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="exportAllocCSV()" aria-label="Export allocations to CSV">⬇ Export</button>
+      </div>
+    </div>
+    ${lockBanner}${gradeHint}
+    <div class="filter-row" role="group" aria-label="Filter by grade">
+      <span style="font-size:11px;font-weight:700;color:var(--ink-mid)">Grade:</span>${gChips}
+    </div>
+    <div class="filter-row" role="group" aria-label="Filter by gender">
+      <span style="font-size:11px;font-weight:700;color:var(--ink-mid)">Gender:</span>${dChips}
+      <button class="fc ${unallocOnly?'on':''}" onclick="toggleUnallocOnly()" aria-pressed="${unallocOnly}">Unalloc focus</button>
+    </div>`;
+
+  if (!visLeaders.length) {
+    body += `<div class="empty"><span class="empty-icon">👥</span><div class="empty-title">No leaders match filters</div><div class="empty-sub">Clear filters or add leaders first</div></div>`;
+  } else {
+    body += '<div class="alloc-grid">';
+    for (const l of visLeaders) {
+      const assignedIds = students.filter(s => allocs[s.id]?.includes(l.id)).map(s => s.id);
+      const assignedStudents = assignedIds.map(id => students.find(s => s.id === id)).filter(Boolean);
+      const n = assignedStudents.length;
+      // Capacity hint: rough target = total students in gender / number of same-gender leaders
+      const sameGenderLeaders = leaders.filter(ll => !ll.gender || ll.gender === l.gender).length || 1;
+      const sameGenderStudents = students.filter(s => !l.gender || s.gender === l.gender).length;
+      const target = Math.round(sameGenderStudents / sameGenderLeaders);
+      const pct = target > 0 ? Math.min(100, Math.round(n / target * 100)) : 0;
+      const fillCls = pct >= 90 ? 'fill-r' : pct >= 60 ? 'fill-g' : 'fill-a';
+
+      let studentRows = '';
+      for (const s of assignedStudents.slice(0, 8)) {
+        const p = svcPct(s);
+        studentRows += `<div class="alloc-stud-row">
+          <div style="flex:1;min-width:0">
+            <div class="alloc-stud-name">${s.firstName} ${s.lastName}</div>
+            <div class="alloc-stud-meta">Gr ${s.grade||'—'} · ${s.gender}${p!==null?' · '+p+'%':''}</div>
+          </div>
+          ${riskChip(s.atRiskStatus)}
+          ${canEdit?`<button class="btn btn-ghost btn-sm" style="padding:4px 6px;color:var(--danger)" onclick="removeAllocWithUndo('${s.id}','${l.id}','${s.firstName} ${s.lastName}','${l.fullName}')" aria-label="Remove ${s.firstName} ${s.lastName} from ${l.fullName}">×</button>`:''}
+        </div>`;
+      }
+      if (assignedStudents.length > 8) {
+        studentRows += `<div style="font-size:12px;color:var(--ink-faint);padding:6px 0;text-align:center">+${assignedStudents.length - 8} more · <button class="btn btn-ghost btn-sm" onclick="showLeaderDetail('${l.id}')">View all</button></div>`;
+      }
+
+      const gi = l.gender==='female'?'♀ ':l.gender==='male'?'♂ ':'';
+      body += `<div class="alloc-leader">
+        <div class="alloc-leader-name">${gi}${l.fullName}</div>
+        <div class="alloc-leader-meta">Gr ${l.grades?.join(', ')||'All'} · ${l.gender||'any gender'}</div>
+        <div class="alloc-count-bar"><div class="alloc-count-fill ${fillCls}" style="width:${pct}%"></div></div>
+        <div class="alloc-count-label">
+          <span>${n} student${n!==1?'s':''}</span>
+          <span style="color:var(--ink-faint)">~${target} target</span>
+        </div>
+        ${canEdit?`<button class="alloc-add-btn" onclick="openStudentPicker('${l.id}','${l.gender||''}','${l.fullName.replace(/'/g,"\\'")}')">+ Add Students</button>`:''}
+        ${assignedStudents.length?`<div class="alloc-students">${studentRows}</div>`:''}
+      </div>`;
+    }
+    body += '</div>';
+  }
+
+  setApp(shell(body));
+}
+
+function toggleAF(type, val) {
+  if (type==='g') { if (_aS.gf.has(val)) _aS.gf.delete(val); else _aS.gf.add(val); }
+  else { if (_aS.df.has(val)) _aS.df.delete(val); else _aS.df.add(val); }
+  saveAllocFilters(); renderAllocView();
+}
+function toggleUnallocOnly() { _aS.unallocOnly = !_aS.unallocOnly; saveAllocFilters(); renderAllocView(); }
+
+// ── STUDENT PICKER MODAL (replaces tiny <select> — works at 60+ students) ──
+function openStudentPicker(leaderId, leaderGender, leaderName) {
+  _pickerCtx = { leaderId, leaderGender, leaderName };
+  const assignedForLeader = new Set(
+    _aS.students.filter(s => _aS.allocs[s.id]?.includes(leaderId)).map(s => s.id)
+  );
+  // Pool: same gender (or ungendered leader) — includes all grades for cross-grade allocation
+  const pool = _aS.students.filter(s => !leaderGender || s.gender === leaderGender);
+
+  modal(`
+    <div class="mo-title">Add Students → ${leaderName}</div>
+    <div style="position:relative;margin-bottom:4px">
+      <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--ink-faint);pointer-events:none">🔍</span>
+      <input class="picker-search" id="picker-q" placeholder="Search by name, grade…" oninput="filterPicker()" autofocus>
+    </div>
+    <div id="picker-list" class="picker-list"></div>`,
+    () => { _pickerCtx = null; }
+  );
+
+  // Pre-render the list
+  window._pickerPool = pool;
+  window._pickerAssigned = assignedForLeader;
+  filterPicker();
+
+  // Focus the search input
+  setTimeout(() => document.getElementById('picker-q')?.focus(), 60);
+}
+
+function filterPicker() {
+  const q = (document.getElementById('picker-q')?.value || '').toLowerCase().trim();
+  const pool = window._pickerPool || [];
+  const assigned = window._pickerAssigned || new Set();
+
+  let list = pool;
+  if (q) {
+    // Match each word against first name, last name, or grade
+    const terms = q.split(/\s+/).filter(Boolean);
+    list = pool.filter(s => {
+      const text = `${s.firstName} ${s.lastName} ${s.grade||''}`.toLowerCase();
+      return terms.every(t => text.includes(t));
+    });
+  }
+
+  // Group: already assigned at top, then by grade
+  const alreadyAssigned = list.filter(s => assigned.has(s.id));
+  const available = list.filter(s => !assigned.has(s.id));
+
+  // Group available by grade
+  const byGrade = {};
+  for (const s of available) {
+    const g = s.grade || 0;
+    if (!byGrade[g]) byGrade[g] = [];
+    byGrade[g].push(s);
+  }
+
+  let html = '';
+  if (alreadyAssigned.length) {
+    html += `<div class="picker-section">Already assigned (${alreadyAssigned.length})</div>`;
+    for (const s of alreadyAssigned) {
+      html += pickerRow(s, true);
+    }
+  }
+  if (available.length === 0 && alreadyAssigned.length === 0) {
+    html = '<div style="text-align:center;padding:32px;color:var(--ink-faint)">No students found</div>';
+  } else {
+    for (const [grade, students] of Object.entries(byGrade).sort((a,b) => Number(a[0])-Number(b[0]))) {
+      html += `<div class="picker-section">Grade ${grade === '0' ? '—' : grade} (${students.length})</div>`;
+      for (const s of students) html += pickerRow(s, false);
+    }
+  }
+  const listEl = document.getElementById('picker-list');
+  if (listEl) listEl.innerHTML = html;
+}
+
+function pickerRow(s, isAssigned) {
+  const pct = svcPct(s);
+  const risk = riskChip(s.atRiskStatus);
+  if (isAssigned) {
+    return `<div class="picker-item assigned" role="button" aria-disabled="true">
+      <div>
+        <div class="picker-item-name">✓ ${s.firstName} ${s.lastName}</div>
+        <div class="picker-item-meta">Gr ${s.grade||'—'} · ${s.gender}${pct!==null?' · '+pct+'%':''}</div>
+      </div>
+      <div class="picker-item-right">${risk}</div>
+    </div>`;
+  }
+  return `<button class="picker-item" onclick="addAllocFromPicker('${s.id}')" aria-label="Assign ${s.firstName} ${s.lastName}">
+    <div>
+      <div class="picker-item-name">${s.firstName} ${s.lastName}</div>
+      <div class="picker-item-meta">Gr ${s.grade||'—'} · ${s.gender}${pct!==null?' · '+pct+'%':''}</div>
+    </div>
+    <div class="picker-item-right">${risk}<span style="color:var(--accent);font-size:18px;margin-left:8px">+</span></div>
+  </button>`;
+}
+
+async function addAllocFromPicker(studentId) {
+  if (!_pickerCtx) return;
+  const { leaderId } = _pickerCtx;
+  try {
+    await API.post('/allocations', { studentId, leaderId });
+    const cur = _aS.allocs[studentId] || [];
+    _aS.allocs[studentId] = [...cur, leaderId];
+    // Update the assigned set and re-filter
+    window._pickerAssigned.add(studentId);
+    filterPicker();
+    // Update count badge in card below modal
+    const s = _aS.students.find(x => x.id === studentId);
+    if (s) toast(`${s.firstName} ${s.lastName} added`);
+  } catch (e) { toast(e.message); }
+}
+
+async function removeAllocWithUndo(studentId, leaderId, studentName, leaderName) {
+  try {
+    await API.del(`/allocations/${studentId}/${leaderId}`);
+    _aS.allocs[studentId] = (_aS.allocs[studentId]||[]).filter(id => id !== leaderId);
+    renderAllocView();
+    showUndoToast(`Removed ${studentName} from ${leaderName}`, async () => {
+      try {
+        await API.post('/allocations', { studentId, leaderId });
+        const cur = _aS.allocs[studentId] || [];
+        _aS.allocs[studentId] = [...cur, leaderId];
+        renderAllocView();
+      } catch (e) { toast('Undo failed: ' + e.message); }
+    });
+  } catch (e) { toast(e.message); }
+}
+
+// ============================================================
+// MY STUDENTS (leader self-view — replaces Allocate in bottom nav)
+// ============================================================
+let _msLeader = null;
+
+async function renderMyStudents() {
+  setApp(shell('<div class="loading"><div class="spin"></div></div>'));
+  const [leaders, allocsRaw] = await Promise.all([
+    API.get('/leaders').catch(() => []),
+    API.get('/allocations').catch(() => []),
+  ]);
+
+  let body = `<div class="ph"><div class="ph-title">My Students</div><div class="ph-sub">Select a leader to view their students</div></div>`;
+
+  if (!leaders.length) {
+    body += '<div class="empty"><span class="empty-icon">👥</span><div class="empty-title">No leaders yet</div><div class="empty-sub">Add leaders first</div></div>';
+    setApp(shell(body));
+    return;
+  }
+
+  const opts = leaders.map(l => `<option value="${l.id}" ${_msLeader === l.id ? 'selected' : ''}>${l.fullName} (Gr ${l.grades?.join(', ') || 'All'} · ${l.gender || 'any gender'})</option>`).join('');
+  body += `<div class="fg"><label class="fl">I am…</label><select class="fs" onchange="_msLeader=this.value;renderMyStudents()"><option value="">— Choose a leader —</option>${opts}</select></div>`;
+
+  if (_msLeader) {
+    const leader = leaders.find(l => l.id === _msLeader);
+    let summary;
+    try { summary = await API.get(`/allocations/leader/${_msLeader}/summary`); } catch {}
+    const students = summary?.students || [];
+
+    if (leader) {
+      body += `<div class="card" style="text-align:center;padding:18px;margin-bottom:16px">
+        <div style="font-size:36px;margin-bottom:8px">${leader.gender === 'female' ? '♀' : leader.gender === 'male' ? '♂' : '⚥'}</div>
+        <div style="font-size:18px;font-weight:800">${leader.fullName}</div>
+        <div style="font-size:13px;color:var(--ink-mid);margin-top:4px">Gr ${leader.grades?.join(', ') || 'All'} · ${leader.gender || 'any gender'}</div>
+      </div>`;
+    }
+
+    body += `<div class="sh">My Students (${students.length})</div>`;
+    if (!students.length) {
+      body += '<div style="color:var(--ink-faint);font-size:13px;padding:12px 0">No students allocated yet.</div>';
+    } else {
+      for (const s of students) {
+        const pct = s.svcTotal > 0 ? Math.round(s.svcAttended / s.svcTotal * 100) : null;
+        const pc = pct !== null ? (pct >= 70 ? 'var(--success)' : pct >= 40 ? 'var(--warn)' : 'var(--danger)') : null;
+        body += `<div class="li" style="cursor:default">
+          <div class="li-body">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <span class="li-title">${s.fullName}</span>
+              ${riskChip(s.atRiskStatus)}
+            </div>
+            <div class="li-sub">Gr ${s.grade || '—'} · ${s.gender}</div>
+            ${pct !== null ? `<div style="font-size:13px;font-weight:700;color:${pc};margin-top:4px">Fridays ${pct}% (${s.svcAttended}/${s.svcTotal})</div>` : ''}
+            ${s.mobile ? `<div style="font-size:12px;color:var(--ink-mid);margin-top:2px">📱 ${s.mobile}</div>` : ''}
+            ${s.parentPhone ? `<div style="font-size:12px;color:var(--ink-mid);margin-top:2px">👪 ${s.parentPhone}</div>` : ''}
+          </div>
+        </div>`;
+      }
+    }
+  }
+
+  setApp(shell(body));
+}
+
+async function exportAllocCSV() {
+  try {
+    const { csv, rowCount } = await API.get('/allocations/export');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'allocations.csv'; a.click();
+    URL.revokeObjectURL(url);
+    toast(`Exported ${rowCount} rows`);
+  } catch (e) { toast('Export failed: ' + e.message); }
+}
+
+// ============================================================
+// QUAD VIEW
+// ============================================================
+async function renderQuadView() {
+  setApp(shell('<div class="loading"><div class="spin"></div></div>'));
+  let leaders=[], allocsRaw=[], students=[];
+  try { [leaders, allocsRaw, students] = await Promise.all([API.get('/leaders'), API.get('/allocations'), API.get('/students')]); } catch {}
+  const sById = {}; for (const s of students) sById[s.id]=s;
+  const aByL = {}; for (const a of allocsRaw) { if (!aByL[a.leaderId]) aByL[a.leaderId]=[]; aByL[a.leaderId].push(a); }
+
+  // Change 10: Last allocation timestamp
+  let lastAllocStr = '';
+  if (allocsRaw.length) {
+    const latest = allocsRaw.reduce((max, a) => (!max || new Date(a.createdAt) > new Date(max.createdAt) ? a : max), null);
+    if (latest?.createdAt) {
+      lastAllocStr = `Last allocation made: ${fmtDate(latest.createdAt)}`;
+    }
+  }
+
+  let body = `<div class="ph"><div class="ph-title">Quad View</div><div class="ph-sub">${lastAllocStr || 'Leader assignments in your scope'}</div></div>`;
+
+  if (!leaders.length) {
+    body += '<div class="empty"><span class="empty-icon">👥</span><div class="empty-title">No leaders in scope</div></div>';
+  } else {
+    for (const l of leaders) {
+      const allocs = (aByL[l.id]||[]).map(a => sById[a.studentId]).filter(Boolean);
+      const atRiskCount = allocs.filter(s => s && ['atrisk','stopped','declining'].includes(s.atRiskStatus)).length;
+      body += `<div class="card">
+        <div class="card-hdr">
+          <div>
+            <div class="card-title">${l.fullName}</div>
+            <div class="card-sub">Gr ${l.grades?.join(', ')||'All'} · ${l.gender||'any'} · ${allocs.length} student${allocs.length!==1?'s':''}${atRiskCount?' · ⚠️ '+atRiskCount+' at risk':''}</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="showLeaderDetail('${l.id}')">View →</button>
+        </div>`;
+      if (!allocs.length) {
+        body += '<p style="color:var(--ink-faint);font-size:13px">No students assigned</p>';
+      } else {
+        for (const s of allocs) {
+          if (!s) continue;
+          const pct = svcPct(s);
+          body += `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--paper-dark)">
+            <div style="flex:1">
+              <span style="font-weight:600;font-size:14px">${s.firstName} ${s.lastName}</span>
+              <span style="font-size:12px;color:var(--ink-mid);margin-left:6px">Gr ${s.grade||'—'} · ${s.gender}</span>
+            </div>
+            ${riskChip(s.atRiskStatus)}
+            ${pct!==null?`<span style="font-size:12px;font-weight:700;color:${pct<50?'var(--danger)':'var(--ink-mid)'}">${pct}%</span>`:''}
+          </div>`;
+        }
+      }
+      body += '</div>';
+    }
+  }
+  setApp(shell(body));
+}
+
+// ============================================================
+// MY QUAD (Change 3: merged quad+students for quad logins)
+// ============================================================
+let _mqTab = 'leaders';
+
+async function renderMyQuad() {
+  setApp(shell('<div class="loading"><div class="spin"></div></div>'));
+  let leaders=[], allocsRaw=[], students=[];
+  try { [leaders, allocsRaw, students] = await Promise.all([API.get('/leaders'), API.get('/allocations'), API.get('/students')]); } catch {}
+
+  // Change 10: Last allocation timestamp for My Quad too
+  let lastAllocStr = '';
+  if (allocsRaw.length) {
+    const latest = allocsRaw.reduce((max, a) => (!max || new Date(a.createdAt) > new Date(max.createdAt) ? a : max), null);
+    if (latest?.createdAt) lastAllocStr = `Last allocation made: ${fmtDate(latest.createdAt)}`;
+  }
+
+  const tabHtml = ['leaders','students','at-risk'].map(t => {
+    const lbl = t === 'at-risk' ? 'At Risk' : t.charAt(0).toUpperCase() + t.slice(1);
+    return `<button class="tbbtn ${_mqTab===t?'on':''}" onclick="switchMQTab('${t}')">${lbl}</button>`;
+  }).join('');
+
+  let body = `
+    <div class="ph">
+      <div class="ph-title">My Quad</div>
+      <div class="ph-sub">${lastAllocStr || 'Your quad overview'}</div>
+    </div>
+    <div class="tbbar">${tabHtml}</div>`;
+
+  const sById = {}; for (const s of students) sById[s.id] = s;
+  const aByL = {}; for (const a of allocsRaw) { if (!aByL[a.leaderId]) aByL[a.leaderId]=[]; aByL[a.leaderId].push(a); }
+
+  if (_mqTab === 'leaders') {
+    if (!leaders.length) {
+      body += '<div class="empty"><span class="empty-icon">👥</span><div class="empty-title">No leaders in scope</div></div>';
+    } else {
+      for (const l of leaders) {
+        const allocs = (aByL[l.id]||[]).map(a => sById[a.studentId]).filter(Boolean);
+        const atRiskCount = allocs.filter(s => s && ['atrisk','stopped','declining'].includes(s.atRiskStatus)).length;
+        body += `<div class="card">
+          <div class="card-hdr">
+            <div>
+              <div class="card-title">${l.fullName}</div>
+              <div class="card-sub">Gr ${l.grades?.join(', ')||'All'} · ${l.gender||'any'} · ${allocs.length} student${allocs.length!==1?'s':''}${atRiskCount?' · ⚠️ '+atRiskCount+' at risk':''}</div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="showLeaderDetail('${l.id}')">View →</button>
+          </div>`;
+        if (!allocs.length) {
+          body += '<p style="color:var(--ink-faint);font-size:13px">No students assigned</p>';
+        } else {
+          for (const s of allocs) {
+            if (!s) continue;
+            const pct = svcPct(s);
+            body += `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--paper-dark)">
+              <div style="flex:1">
+                <span style="font-weight:600;font-size:14px">${s.firstName} ${s.lastName}</span>
+                <span style="font-size:12px;color:var(--ink-mid);margin-left:6px">Gr ${s.grade||'—'} · ${s.gender}</span>
+              </div>
+              ${riskChip(s.atRiskStatus)}
+              ${pct!==null?`<span style="font-size:12px;font-weight:700;color:${pct<50?'var(--danger)':'var(--ink-mid)'}">${pct}%</span>`:''}
+            </div>`;
+          }
+        }
+        body += '</div>';
+      }
+    }
+  }
+
+  if (_mqTab === 'students') {
+    if (!students.length) {
+      body += '<div class="empty"><span class="empty-icon">🎓</span><div class="empty-title">No students in scope</div></div>';
+    } else {
+      for (const s of students) {
+        const pct = svcPct(s);
+        body += `<div class="li" onclick="showStudentDetail('${s.id}')" style="cursor:pointer">
+          <div class="li-body">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <span class="li-title">${s.firstName} ${s.lastName}</span>
+              ${riskChip(s.atRiskStatus)}
+            </div>
+            <div class="li-sub">Gr ${s.grade||'—'} · ${s.gender} ${quadChip(s.quad)}</div>
+            ${pct!==null?`<div style="margin-top:5px">${pBar(pct)}<div style="font-size:11px;color:var(--ink-faint);margin-top:2px">${s.svcAttended}/${s.svcTotal} (${pct}%)</div></div>`:''}
+          </div>
+          <div class="li-right" style="color:var(--ink-faint)">›</div>
+        </div>`;
+      }
+    }
+  }
+
+  if (_mqTab === 'at-risk') {
+    const atRiskStudents = students.filter(s => s.atRiskStatus && s.atRiskStatus !== 'regular');
+    if (!atRiskStudents.length) {
+      body += '<div class="empty"><span class="empty-icon">✅</span><div class="empty-title">No at-risk students</div><div class="empty-sub">Great news — attendance looks healthy</div></div>';
+    } else {
+      const groups = { stopped:[], atrisk:[], declining:[], watch:[] };
+      for (const s of atRiskStudents) if (groups[s.atRiskStatus]) groups[s.atRiskStatus].push(s);
+      const labels = { stopped:'Stopped Attending', atrisk:'At Risk', declining:'Declining', watch:'Watch List' };
+      for (const [status, items] of Object.entries(groups)) {
+        if (!items.length) continue;
+        body += `<div class="sh">${labels[status]} (${items.length})</div>`;
+        for (const s of items) {
+          const pct = s.svcTotal > 0 ? Math.round(s.svcAttended / s.svcTotal * 100) : 0;
+          body += `<div class="li" style="cursor:default;align-items:flex-start">
+            <div class="li-body">
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                <span class="li-title">${s.firstName} ${s.lastName}</span>
+                ${riskChip(s.atRiskStatus)} ${quadChip(s.quad)}
+              </div>
+              <div class="li-sub" style="margin-top:3px">Gr ${s.grade||'—'} · ${s.gender}</div>
+              <div style="display:flex;gap:16px;margin-top:8px">
+                <div>
+                  <div style="font-size:10px;color:var(--ink-faint);font-weight:700;text-transform:uppercase">Service</div>
+                  <div style="font-size:13px;font-weight:700;color:${pct<50?'var(--danger)':'var(--ink)'}">${s.svcAttended}/${s.svcTotal} (${pct}%)</div>
+                  <div class="pb" style="width:80px">${pBar(pct)}</div>
+                </div>
+              </div>
+            </div>
+          </div>`;
+        }
+      }
+    }
+  }
+
+  setApp(shell(body));
+}
+
+async function switchMQTab(tab) {
+  _mqTab = tab;
+  await renderMyQuad();
+}
+
+// ============================================================
+// AT RISK
+// ============================================================
+let _arFilter = { grade:null, gender:null };
+let _trTab = 'svc', _trGradeOpen = null, _trQuadOpen = null;
+
+function saveArFilter() {
+  try { sessionStorage.setItem('yap_ar_filter', JSON.stringify(_arFilter)); } catch {}
+}
+function restoreArFilter() {
+  try {
+    const raw = sessionStorage.getItem('yap_ar_filter');
+    if (raw) { const f = JSON.parse(raw); _arFilter.grade = f.grade||null; _arFilter.gender = f.gender||null; }
+  } catch {}
+}
+
+async function renderAtRisk() {
+  setApp(shell('<div class="loading"><div class="spin"></div></div>'));
+  let list=[];
+  try {
+    const params = new URLSearchParams();
+    if (_arFilter.grade) params.set('grade', _arFilter.grade);
+    if (_arFilter.gender) params.set('gender', _arFilter.gender);
+    list = await API.get(`/at-risk${params.toString()?'?'+params.toString():''}`);
+  } catch {}
+  const u = S.user;
+
+  // Scoped filter chips — match demo behaviour
+  const arGrades = u.role==='grade' ? [] : u.role==='quad'
+    ? (u.quad==='g79'||u.quad==='b79'?[7,8,9]:[10,11,12])
+    : [7,8,9,10,11,12];
+  const arGenders = ['director','admin'].includes(u.role) ? ['male','female'] : [];
+
+  const gChips = arGrades.map(g =>
+    `<button class="fc ${_arFilter.grade==g?'on':''}" onclick="setArFilter('grade',${g})">${g}</button>`
+  ).join('');
+  const dChips = arGenders.map(g =>
+    `<button class="fc ${_arFilter.gender===g?'on':''}" onclick="setArFilter('gender','${g}')">${g.charAt(0).toUpperCase()+g.slice(1)}</button>`
+  ).join('');
+
+  let body = `
+    <div class="ph">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div><div class="ph-title">⚠️ At Risk</div><div class="ph-sub">${list.length} student${list.length!==1?'s':''} flagged</div></div>
+        ${['director','admin'].includes(u.role)?`<button class="btn btn-secondary btn-sm" onclick="recomputeAtRisk()">🔄 Recompute</button>`:''}
+      </div>
+    </div>`;
+
+  if (arGrades.length) {
+    body += `<div class="filter-row"><span style="font-size:11px;font-weight:700;color:var(--ink-mid)">Grade:</span>${gChips}
+      <button class="fc ${!_arFilter.grade?'on':''}" onclick="setArFilter('grade',null)">All</button></div>`;
+  }
+  if (arGenders.length) {
+    body += `<div class="filter-row"><span style="font-size:11px;font-weight:700;color:var(--ink-mid)">Gender:</span>${dChips}
+      <button class="fc ${!_arFilter.gender?'on':''}" onclick="setArFilter('gender',null)">All</button></div>`;
+  }
+
+  if (!list.length) {
+    body += '<div class="empty"><span class="empty-icon">✅</span><div class="empty-title">No at-risk students</div><div class="empty-sub">Great news — attendance looks healthy</div></div>';
+  } else {
+    const groups = { stopped:[], atrisk:[], declining:[], watch:[] };
+    for (const s of list) if (groups[s.status]) groups[s.status].push(s);
+    const labels = { stopped:'Stopped Attending', atrisk:'At Risk', declining:'Declining', watch:'Watch List' };
+    for (const [status, items] of Object.entries(groups)) {
+      if (!items.length) continue;
+      body += `<div class="sh">${labels[status]} (${items.length})</div>`;
+      for (const s of items) {
+        const pct = s.svcTotal > 0 ? Math.round(s.svcAttended / s.svcTotal * 100) : 0;
+        body += `
+          <div class="li" style="cursor:default;align-items:flex-start">
+            <div class="li-body">
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                <span class="li-title">${s.fullName}</span>
+                ${riskChip(s.status)} ${quadChip(s.quad)}
+              </div>
+              <div class="li-sub" style="margin-top:3px">Gr ${s.grade||'—'} · ${s.gender}</div>
+              <div style="display:flex;gap:16px;margin-top:8px">
+                <div>
+                  <div style="font-size:10px;color:var(--ink-faint);font-weight:700;text-transform:uppercase">Service</div>
+                  <div style="font-size:13px;font-weight:700;color:${pct<50?'var(--danger)':'var(--ink)'}">${s.svcAttended}/${s.svcTotal} (${pct}%)</div>
+                  <div class="pb" style="width:80px">${pBar(pct)}</div>
+                </div>
+                ${s.grpTotal>0?`<div>
+                  <div style="font-size:10px;color:var(--ink-faint);font-weight:700;text-transform:uppercase">Groups</div>
+                  <div style="font-size:13px;font-weight:700">${s.grpAttended}/${s.grpTotal}</div>
+                </div>`:''}
+              </div>
+            </div>
+            <div class="li-right">
+              <button class="btn btn-ghost btn-sm" onclick="showAtRiskUpdate('${s.studentId}','${s.fullName.replace(/'/g,"\\'")}','${s.status}')" title="Update status">✏️</button>
+            </div>
+          </div>`;
+      }
+    }
+  }
+  setApp(shell(body));
+}
+
+function setArFilter(key, val) {
+  _arFilter[key] = val;
+  saveArFilter();
+  renderAtRisk();
+}
+
+async function recomputeAtRisk() {
+  const btn = document.querySelector('[onclick="recomputeAtRisk()"]');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<div class="spin" style="width:14px;height:14px;border-width:2px"></div> Recomputing…'; }
+  try {
+    const res = await API.post('/at-risk/recompute', {});
+    toast(`Recomputed: ${res.updated} students updated`);
+    await renderAtRisk();
+  } catch (e) { toast(e.message); if (btn) { btn.disabled = false; btn.innerHTML = '🔄 Recompute'; } }
+}
+
+function showAtRiskUpdate(studentId, name, currentStatus) {
+  const statuses = ['regular','watch','declining','atrisk','stopped'];
+  const opts = statuses.map(s => `<option value="${s}" ${s===currentStatus?'selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('');
+  modal(`
+    <div class="mo-title">Update At-Risk Status</div>
+    <p style="color:var(--ink-mid);margin-bottom:14px"><strong>${name}</strong></p>
+    <div class="fg"><label class="fl">Status</label><select class="fs" id="ar-status">${opts}</select></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="submitAtRiskUpdate('${studentId}')">Update</button>
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+    </div>`);
+}
+
+async function submitAtRiskUpdate(studentId) {
+  const status = document.getElementById('ar-status')?.value;
+  try {
+    await API.patch(`/students/${studentId}/at-risk`, { status });
+    closeModal(); toast('Status updated'); await renderAtRisk();
+  } catch (e) { toast(e.message); }
+}
+
+// ============================================================
+// STUDENTS
+// ============================================================
+let _sS = { students:[], search:'', gf:new Set(), df:new Set() };
+
+async function renderStudents() {
+  setApp(shell('<div class="loading"><div class="spin"></div></div>'));
+  try { _sS.students = await API.get('/students'); } catch {}
+  renderStudentView();
+}
+
+function renderStudentView() {
+  const { students, search, gf, df } = _sS;
+  let vis = students;
+  if (gf.size) vis = vis.filter(s => gf.has(s.grade));
+  if (df.size) vis = vis.filter(s => df.has(s.gender));
+  if (search) { const q = search.toLowerCase(); vis = vis.filter(s => `${s.firstName} ${s.lastName}`.toLowerCase().includes(q)); }
+
+  const u = S.user;
+  const ssGrades = u.role==='grade' ? [] : u.role==='quad'
+    ? (u.quad==='g79'||u.quad==='b79'?[7,8,9]:[10,11,12])
+    : [7,8,9,10,11,12];
+  const ssGenders = ['director','admin'].includes(u.role) ? ['male','female'] : [];
+  const gChips = ssGrades.map(g => `<button class="fc ${gf.has(g)?'on':''}" onclick="toggleSF('g',${g})">${g}</button>`).join('');
+  const dChips = ssGenders.map(g => `<button class="fc ${df.has(g)?'on':''}" onclick="toggleSF('d','${g}')">${g.charAt(0).toUpperCase()+g.slice(1)}</button>`).join('');
+
+  let body = `
+    <div class="ph"><div class="ph-title">Student Search</div><div class="ph-sub">${vis.length} of ${students.length}</div></div>
+    <div class="sbar"><span class="si">🔍</span><input type="text" placeholder="Search by name…" value="${search}" oninput="studSearch(this.value)"></div>`;
+  if (ssGrades.length) body += `<div class="filter-row"><span style="font-size:11px;font-weight:700;color:var(--ink-mid)">Grade:</span>${gChips}</div>`;
+  if (ssGenders.length) body += `<div class="filter-row"><span style="font-size:11px;font-weight:700;color:var(--ink-mid)">Gender:</span>${dChips}</div>`;
+
+  if (!vis.length) {
+    body += '<div class="empty"><span class="empty-icon">🎓</span><div class="empty-title">No students found</div></div>';
+  } else {
+    body += '<div class="mob">';
+    for (const s of vis) {
+      const pct = svcPct(s);
+      body += `<div class="li" onclick="showStudentDetail('${s.id}')" style="cursor:pointer">
+        <div class="li-body">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span class="li-title">${s.firstName} ${s.lastName}</span>
+            ${riskChip(s.atRiskStatus)}
+          </div>
+          <div class="li-sub">Gr ${s.grade||'—'} · ${s.gender} ${quadChip(s.quad)}</div>
+          ${pct!==null?`<div style="margin-top:5px">${pBar(pct)}<div style="font-size:11px;color:var(--ink-faint);margin-top:2px">${s.svcAttended}/${s.svcTotal} (${pct}%)</div></div>`:''}
+        </div>
+        <div class="li-right" style="color:var(--ink-faint)">›</div>
+      </div>`;
+    }
+    body += '</div>';
+
+    body += `<div class="desk"><table class="dt"><thead><tr><th>Name</th><th>Gr</th><th>Gender</th><th>Quad</th><th>Svc %</th><th>Status</th><th></th></tr></thead><tbody>`;
+    for (const s of vis) {
+      const pct = svcPct(s);
+      body += `<tr>
+        <td><strong>${s.firstName} ${s.lastName}</strong></td>
+        <td>${s.grade||'—'}</td><td>${s.gender}</td>
+        <td>${quadChip(s.quad)}</td>
+        <td>${pct!==null?`<div style="display:flex;align-items:center;gap:6px">${pct}%<div class="pb" style="width:50px">${pBar(pct)}</div></div>`:'—'}</td>
+        <td>${riskChip(s.atRiskStatus)}</td>
+        <td><button class="btn btn-ghost btn-sm" onclick="showStudentDetail('${s.id}')">View →</button></td>
+      </tr>`;
+    }
+    body += '</tbody></table></div>';
+  }
+  setApp(shell(body));
+}
+
+function toggleSF(type, val) {
+  if (type==='g') { if (_sS.gf.has(val)) _sS.gf.delete(val); else _sS.gf.add(val); }
+  else { if (_sS.df.has(val)) _sS.df.delete(val); else _sS.df.add(val); }
+  renderStudentView();
+}
+function studSearch(v) { _sS.search = v; renderStudentView(); }
+
+async function showStudentDetail(id) {
+  let s, myAllocs;
+  try {
+    [s, myAllocs] = await Promise.all([
+      API.get(`/students/${id}`),
+      API.get(`/allocations/student/${id}`),
+    ]);
+  } catch { toast('Failed to load'); return; }
+  const pct = svcPct(s);
+  const grpPct = s.grpTotal > 0 ? Math.round(s.grpAttended / s.grpTotal * 100) : null;
+
+  const allocRows = myAllocs.length
+    ? myAllocs.map(a => `<span class="chip c-accent" style="margin:2px">${a.leaderName}</span>`).join('')
+    : '<span style="color:var(--ink-faint);font-size:13px">Not allocated</span>';
+
+  modal(`
+    <div class="mo-title">${s.firstName} ${s.lastName}</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
+      ${quadChip(s.quad)} ${riskChip(s.atRiskStatus)}
+      <span class="chip c-neutral">Gr ${s.grade||'—'}</span>
+      <span class="chip c-neutral">${s.gender}</span>
+    </div>
+
+    <div class="sh">Attendance</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+      <div class="stat">
+        <div class="stat-v" style="font-size:22px;color:${pct!==null&&pct<50?'var(--danger)':pct!==null&&pct<70?'var(--warn)':'var(--accent)'}">${pct!==null?pct+'%':'—'}</div>
+        <div class="stat-l">Service</div>
+        ${pct!==null?pBar(pct):''}
+        <div style="font-size:11px;color:var(--ink-faint);margin-top:3px">${s.svcAttended}/${s.svcTotal} sessions</div>
+      </div>
+      <div class="stat">
+        <div class="stat-v" style="font-size:22px">${grpPct!==null?grpPct+'%':'—'}</div>
+        <div class="stat-l">Groups</div>
+        ${grpPct!==null?pBar(grpPct):''}
+        <div style="font-size:11px;color:var(--ink-faint);margin-top:3px">${s.grpAttended}/${s.grpTotal} weeks</div>
+      </div>
+    </div>
+
+    <div class="sh">Leaders Assigned</div>
+    <div style="margin-bottom:14px">${allocRows}</div>
+
+    ${s.mobile||s.parentPhone?`
+    <div class="sh">Contact</div>
+    <div style="margin-bottom:14px">
+      ${s.mobile?`<div style="font-size:13px;margin-bottom:6px"><span style="color:var(--ink-mid);font-weight:600">Mobile:</span> ${s.mobile}</div>`:''}
+      ${s.parentPhone?`<div style="font-size:13px"><span style="color:var(--ink-mid);font-weight:600">Parent:</span> ${s.parentPhone}</div>`:''}
+    </div>`:''}
+
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal();go('leaders')">Allocate →</button>
+      <button class="btn btn-secondary btn-sm" onclick="closeModal()">Close</button>
+    </div>`);
+}
+
+// ============================================================
+// TRENDS
+// ============================================================
+function colChart(sessions, maxH) {
+  const max = Math.max(1, ...sessions.map(s => s.pct));
+  return '<div class="cchart">' + sessions.map(s => {
+    const h = s.pct ? Math.round(s.pct / max * (maxH || 56)) + 4 : 4;
+    const cls = s.pct >= 70 ? '' : s.pct < 40 ? 'cr' : 'lo';
+    return `<div class="ccol"><div class="ccol-bar ${cls}" style="height:${h}px"></div><div class="ccol-lbl">${fmtDM(s.date||'')}</div></div>`;
+  }).join('') + '</div>';
+}
+function hbarTr(label, pct, disp) {
+  const shown = disp !== undefined ? disp : pct + '%';
+  return `<div class="tbar-row"><div class="tbar-lbl">${label}</div><div class="tbar-track"><div class="tbar-fill ${pct<40?'crit':pct<70?'low':''}" style="width:${pct}%"></div></div><div class="tbar-val">${shown}</div></div>`;
+}
+function trendBadge(dir) {
+  if (dir === 'up') return '<span class="tr-up">↑ Improving</span>';
+  if (dir === 'down') return '<span class="tr-dn">↓ Declining</span>';
+  return '<span class="tr-st">→ Stable</span>';
+}
+function trendDir(sessions) {
+  const v = sessions.filter(s => s.tot > 0);
+  if (v.length < 4) return 'stable';
+  const h1 = v.slice(0, Math.floor(v.length/2)).reduce((s,x)=>s+x.pct,0)/Math.floor(v.length/2);
+  const h2 = v.slice(Math.floor(v.length/2)).reduce((s,x)=>s+x.pct,0)/(v.length-Math.floor(v.length/2));
+  if (h2-h1 > 4) return 'up'; if (h1-h2 > 4) return 'down'; return 'stable';
+}
+function avgAtt(sessions) {
+  const v = sessions.filter(s => s.tot > 0);
+  return v.length ? Math.round(v.reduce((s,x)=>s+x.att,0)/v.length) : 0;
+}
+function statCard(nums, labels, prevs) {
+  const cols = nums.length;
+  const fz = cols >= 3 ? '1.2rem' : '1.5rem';
+  return `<div class="tstat" style="grid-template-columns:repeat(${cols},1fr)">` +
+    nums.map((n,i) => `<div class="tstat-cell"><div class="tstat-v" style="font-size:${fz}">${n}</div><div class="tstat-l">${labels[i]}</div>${prevs&&prevs[i]?`<div class="tstat-p">${prevs[i]}</div>`:''}</div>`).join('') +
+    '</div>';
+}
+
+async function renderTrends() {
+  setApp(shell('<div class="loading"><div class="spin"></div></div>'));
+  const u = S.user;
+  let students = [];
+  try { students = await API.get('/students'); } catch {}
+
+  // Build trends from student attendance data
+  // Students have svcAttended/svcTotal/grpAttended/grpTotal
+  // We derive session-level data from overview if available, or aggregate
+  let overview = null;
+  try { overview = await API.get('/overview'); } catch {}
+
+  const canExport = ['quad','director','admin'].includes(u.role);
+  const QUAD_LABELS_LOCAL = { g79:'Girls Yr 7–9', b79:'Boys Yr 7–9', g1012:'Girls Yr 10–12', b1012:'Boys Yr 10–12' };
+
+  // Compute per-grade stats from students
+  function gradeStats(sc) {
+    return [7,8,9,10,11,12].map(gr => {
+      const gs = sc.filter(s => s.grade === gr);
+      const tot = gs.reduce((s,x)=>s+x.svcTotal,0);
+      const att = gs.reduce((s,x)=>s+x.svcAttended,0);
+      const svcPctGr = tot > 0 ? Math.round(att/tot*100) : 0;
+      const uniq = gs.filter(s=>s.svcAttended>0).length;
+      return { grade:gr, count:gs.length, svcPct:svcPctGr, uniq, att, tot };
+    });
+  }
+  function quadStats(sc) {
+    return ['g79','b79','g1012','b1012'].map(q => {
+      const qs = sc.filter(s => s.quad === q);
+      const tot = qs.reduce((s,x)=>s+x.svcTotal,0);
+      const att = qs.reduce((s,x)=>s+x.svcAttended,0);
+      const svcPct = tot > 0 ? Math.round(att/tot*100) : 0;
+      const uniq = qs.filter(s=>s.svcAttended>0).length;
+      return { quad:q, label:QUAD_LABELS_LOCAL[q], count:qs.length, svcPct, uniq, att, tot };
+    });
+  }
+
+  const byGrade = gradeStats(students);
+  const byQuad = quadStats(students);
+  const totalUniq = students.filter(s=>s.svcAttended>0).length;
+  const totalTot = students.reduce((s,x)=>s+x.svcTotal,0);
+  const totalAtt = students.reduce((s,x)=>s+x.svcAttended,0);
+  const totalAvgPct = totalTot > 0 ? Math.round(totalAtt/totalTot*100) : 0;
+  const totalAvgSess = students.length ? Math.round(totalAtt/students.length) : 0;
+
+  const QUAD_COLORS = { g79:'#ec4899', b79:'#3b82f6', g1012:'#8b5cf6', b1012:'#10b981' };
+
+  let body = `<div class="ph"><div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+    <div><div class="ph-title">Attendance Trends</div><div class="ph-sub">Service &amp; lifegroup overview</div></div>
+    ${canExport?'<button class="btn btn-secondary btn-sm" onclick="exportTrendsCSV()">⬇ Export</button>':''}
+  </div></div>`;
+
+  // Tab bar
+  body += `<div class="tbbar">
+    <button class="tbbtn ${_trTab==='svc'?'on':''}" onclick="_trTab='svc';_trGradeOpen=null;_trQuadOpen=null;renderTrends()">Fridays</button>
+    <button class="tbbtn ${_trTab==='grp'?'on':''}" onclick="_trTab='grp';_trGradeOpen=null;_trQuadOpen=null;renderTrends()">Lifegroups</button>
+  </div>`;
+
+  const _scrollY = document.querySelector('.pg')?.scrollTop || 0;
+
+  if (_trTab === 'svc') {
+    // Ministry-wide overview stat card
+    body += `<div class="sh">Ministry Overview</div><div class="card">`;
+    body += `<div style="font-size:12px;color:var(--ink-mid);margin-bottom:8px">Attendance across all students this term</div>`;
+    body += statCard(
+      [totalUniq, totalTot>0?Math.round(totalAtt/(Math.max(1,...students.filter(s=>s.svcTotal>0).map(s=>s.svcTotal))||1)):0, totalAvgSess],
+      ['Unique attenders', 'Avg/session', 'Avg sessions/student'],
+      null
+    );
+    body += '</div>';
+
+    if (u.role === 'grade') {
+      const gr = byGrade.find(x => x.grade === u.grade);
+      if (gr && gr.count) {
+        body += `<div class="sh">Grade ${u.grade}</div><div class="card">`;
+        body += statCard([gr.uniq, gr.count>0?Math.round(gr.att/gr.count):0, gr.count>0?Math.round(gr.att/gr.count):0],
+          ['Unique attenders','Avg/session','Avg sessions/student'], null);
+        body += '</div>';
+      }
+    } else if (u.role === 'quad') {
+      const q = byQuad.find(x => x.quad === u.quad);
+      if (q && q.count) {
+        body += `<div class="sh">${q.label}</div><div class="card">`;
+        body += statCard([q.uniq, q.count>0?Math.round(q.att/q.count):0, q.count>0?Math.round(q.att/q.count):0],
+          ['Unique attenders','Avg/session','Avg sessions/student'], null);
+        body += '<div class="sh" style="margin-top:10px">By Grade</div><div class="tbar-wrap" style="margin-top:6px">';
+        const grades = u.quad==='g79'||u.quad==='b79' ? [7,8,9] : [10,11,12];
+        for (const gr of grades) {
+          const g = byGrade.find(x=>x.grade===gr);
+          if (g && g.count) body += hbarTr('Yr'+gr, g.svcPct, g.uniq+' uniq');
+        }
+        body += '</div></div>';
+      }
+    } else {
+      // Director / admin: collapsible quad cards
+      body += `<div class="sh">By Quad</div>`;
+      for (const q of byQuad) {
+        if (!q.count) continue;
+        const isQOpen = _trQuadOpen === q.quad;
+        body += `<div class="card" style="margin-bottom:8px;border-left:4px solid ${QUAD_COLORS[q.quad]}">`;
+        body += `<div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="_trQuadOpen=${isQOpen?'null':`'${q.quad}'`};_trGradeOpen=null;renderTrends()">
+          <span style="font-size:12px;transition:.2s;display:inline-block;transform:${isQOpen?'rotate(90deg)':'rotate(0deg)'}">›</span>
+          <div style="flex:1;font-weight:700;font-size:14px">${q.label}</div>
+          <span style="font-size:12px;font-weight:700;color:var(--ink-mid)">${q.uniq} uniq · ${q.count>0?Math.round(q.att/q.count):0} avg</span>
+        </div>`;
+        if (isQOpen) {
+          body += statCard([q.uniq, q.count>0?Math.round(q.att/q.count):0, q.count>0?Math.round(q.att/q.count):0],
+            ['Unique','Avg/session','Avg sessions/student'], null);
+          const grades = q.quad==='g79'||q.quad==='b79' ? [7,8,9] : [10,11,12];
+          for (const gr of grades) {
+            const g = byGrade.find(x=>x.grade===gr);
+            if (!g||!g.count) continue;
+            const isGOpen = _trGradeOpen === gr;
+            body += `<div style="border-top:1px solid var(--paper-dark);padding:6px 0">
+              <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="_trGradeOpen=${isGOpen?'null':gr};renderTrends()">
+                <span style="font-size:12px;display:inline-block;transform:${isGOpen?'rotate(90deg)':'rotate(0deg)'}">›</span>
+                <div style="flex:1;font-size:13px;font-weight:700">Year ${gr}</div>
+                <span style="font-size:13px;font-weight:700">${g.uniq}</span><span style="font-size:11px;color:var(--ink-faint);margin:0 8px 0 3px">uniq</span>
+                <span style="font-size:13px;font-weight:700">${g.count>0?Math.round(g.att/g.count):0}</span><span style="font-size:11px;color:var(--ink-faint);margin-left:3px">avg</span>
+              </div>
+              ${isGOpen?`<div style="padding-left:20px;margin-top:6px">${statCard([g.uniq,g.count>0?Math.round(g.att/g.count):0,g.count>0?Math.round(g.att/g.count):0],['Unique','Avg/session','Avg sessions/student'],null)}</div>`:''}
+            </div>`;
+          }
+        }
+        body += '</div>';
+      }
+    }
+
+  } else {
+    // Lifegroups tab
+    const grpStudents = students.filter(s => s.grpTotal > 0);
+    const totGrpEnrolled = grpStudents.length;
+    const totGrpUniq = grpStudents.filter(s=>s.grpAttended>0).length;
+    const totGrpAtt = grpStudents.reduce((s,x)=>s+x.grpAttended,0);
+    const totGrpAvg = totGrpEnrolled ? Math.round(totGrpAtt/totGrpEnrolled) : 0;
+
+    body += `<div class="sh">Overview</div><div class="card">`;
+    body += `<div style="font-size:12px;color:var(--ink-mid);margin-bottom:8px">${totGrpEnrolled} enrolled across lifegroups</div>`;
+    body += statCard([totGrpUniq, totGrpAvg], ['Unique attenders','Avg sessions/student'], null);
+    body += '</div>';
+
+    const lgGrades = u.role==='grade' ? [u.grade]
+      : u.role==='quad' ? (u.quad==='g79'||u.quad==='b79'?[7,8,9]:[10,11,12])
+      : [7,8,9,10,11,12];
+
+    if (u.role !== 'grade') body += `<div class="sh">By Grade</div>`;
+    for (const gr of lgGrades) {
+      const grSc = students.filter(s => s.grade === gr && s.grpTotal > 0);
+      if (!grSc.length) continue;
+      const grUniq = grSc.filter(s=>s.grpAttended>0).length;
+      const grAtt = grSc.reduce((s,x)=>s+x.grpAttended,0);
+      const grAvg = grSc.length ? Math.round(grAtt/grSc.length) : 0;
+      const isOpen = _trGradeOpen === gr;
+      body += `<div class="card" style="margin-bottom:8px">`;
+      if (u.role !== 'grade') {
+        body += `<div style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:4px" onclick="_trGradeOpen=${isOpen?'null':gr};renderTrends()">
+          <span style="font-size:12px;display:inline-block;transform:${isOpen?'rotate(90deg)':'rotate(0deg)'}">›</span>
+          <span style="font-size:13px;font-weight:700;flex:1">Year ${gr}</span>
+          <span style="font-size:11px;color:var(--ink-mid)">${grSc.length} enrolled</span>
+        </div>`;
+      } else {
+        body += `<div style="font-size:13px;font-weight:700;margin-bottom:6px">Grade ${gr} Lifegroups</div>`;
+      }
+      body += statCard([grUniq, grAvg], ['Unique attenders','Avg sessions/student'], null);
+      if (!isOpen && u.role !== 'grade') { body += '</div>'; continue; }
+      // Show a summary bar: unique/enrolled
+      const uniqPct = grSc.length ? Math.round(grUniq/grSc.length*100) : 0;
+      body += `<div style="margin-top:8px;font-size:11px;color:var(--ink-mid)">${grUniq} of ${grSc.length} enrolled attended at least once</div>`;
+      body += `<div class="pb" style="margin-top:4px"><div class="pb-f ${uniqPct>=75?'fill-g':uniqPct>=50?'fill-a':'fill-r'}" style="width:${uniqPct}%"></div></div>`;
+      body += '</div>';
+    }
+  }
+
+  setApp(shell(body));
+  requestAnimationFrame(() => { const pg = document.querySelector('.pg'); if (pg) pg.scrollTop = _scrollY; });
+}
+
+async function exportTrendsCSV() {
+  try {
+    const students = await API.get('/students');
+    const rows = [['Grade','Students','Unique Svc','Avg Svc Sess','Grp Enrolled','Unique Grp','Avg Grp Sess']];
+    for (const gr of [7,8,9,10,11,12]) {
+      const gs = students.filter(s=>s.grade===gr);
+      if (!gs.length) continue;
+      const u=gs.filter(s=>s.svcAttended>0).length;
+      const avgSvc=gs.length?Math.round(gs.reduce((s,x)=>s+x.svcAttended,0)/gs.length):0;
+      const grpS=gs.filter(s=>s.grpTotal>0);
+      const uG=grpS.filter(s=>s.grpAttended>0).length;
+      const avgGrp=grpS.length?Math.round(grpS.reduce((s,x)=>s+x.grpAttended,0)/grpS.length):0;
+      rows.push([gr,gs.length,u,avgSvc,grpS.length,uG,avgGrp]);
+    }
+    const csv = rows.map(r=>r.join(',')).join('\r\n');
+    const blob = new Blob([csv],{type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download='trends.csv'; a.click();
+    URL.revokeObjectURL(url); toast('Exported');
+  } catch(e) { toast('Export failed: '+e.message); }
+}
+
+// ============================================================
+// IMPORT
+// ============================================================
+async function renderImport() {
+  setApp(shell('<div class="loading"><div class="spin"></div></div>'));
+  let history = [];
+  try { history = await API.get('/import/history'); } catch {}
+
+  let body = `
+    <div class="ph"><div class="ph-title">Import Data</div><div class="ph-sub">Upload CSV to update students and attendance</div></div>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:6px">Service Attendance CSV</div>
+      <p style="font-size:13px;color:var(--ink-mid);margin-bottom:12px">
+        Required columns: <code>first_name</code>, <code>last_name</code>, <code>gender</code>, <code>grade</code><br>
+        Date columns (YYYY-MM-DD) are read as attendance (true/false/1/0/yes/no)
+      </p>
+      <div id="drop-zone" style="border:2px dashed var(--paper-dark);border-radius:var(--radius-sm);padding:32px;text-align:center;cursor:pointer;transition:border-color .2s"
+        onclick="document.getElementById('csv-file').click()"
+        ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
+        ondragleave="this.style.borderColor=''"
+        ondrop="event.preventDefault();this.style.borderColor='';handleImportDrop(event)">
+        <div style="font-size:36px;margin-bottom:8px">📥</div>
+        <div style="font-weight:600">Drop CSV here or tap to browse</div>
+        <div style="font-size:12px;color:var(--ink-faint);margin-top:4px">Supports .csv files up to 10MB</div>
+      </div>
+      <input type="file" id="csv-file" accept=".csv" style="display:none" onchange="handleImportFile(this)">
+      <div id="import-status" style="margin-top:12px"></div>
+    </div>`;
+
+  if (history.length) {
+    body += '<div class="sh">Import History</div>';
+    for (const h of history.slice(0, 10)) {
+      const d = new Date(h.importedAt);
+      const dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+      body += `<div class="li" style="cursor:default">
+        <div class="li-body">
+          <div class="li-title">${h.filename}</div>
+          <div class="li-sub">${dateStr} · ${h.rowCount} rows · ${h.studentsAdded} added, ${h.studentsUpdated} updated, ${h.sessionsAdded} sessions</div>
+        </div>
+        <span class="chip ${h.status==='ok'?'c-success':'c-danger'}">${h.status}</span>
+      </div>`;
+    }
+  }
+
+  setApp(shell(body));
+}
+
+function handleImportDrop(e) { const f = e.dataTransfer.files[0]; if (f) processImport(f); }
+function handleImportFile(input) { const f = input.files[0]; if (f) processImport(f); }
+
+function processImport(file) {
+  const statusEl = document.getElementById('import-status');
+  statusEl.innerHTML = '<div class="alert al-info"><div class="spin" style="margin-right:8px"></div>Parsing CSV…</div>';
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const rows = parseCSV(e.target.result);
+    if (!rows.length) { statusEl.innerHTML = '<div class="alert al-err">No valid rows found in CSV</div>'; return; }
+    statusEl.innerHTML = `<div class="alert al-info">Found ${rows.length} rows. Uploading…</div>`;
+    try {
+      const result = await API.post('/import/csv', { rows, filename: file.name });
+      statusEl.innerHTML = `<div class="alert al-ok">✓ Import complete: ${result.studentsAdded} added, ${result.studentsUpdated} updated, ${result.sessionsAdded} sessions</div>`;
+    } catch (err) { statusEl.innerHTML = `<div class="alert al-err">Import failed: ${err.message}</div>`; }
+  };
+  reader.readAsText(file);
+}
+
+function splitCSVLine(line) {
+  const vals=[]; let cur='', inQ=false;
+  for (let i=0; i<line.length; i++) {
+    const c=line[i];
+    if (inQ) { if (c==='"'&&line[i+1]==='"') { cur+='"'; i++; } else if (c==='"') { inQ=false; } else { cur+=c; } }
+    else if (c==='"') { inQ=true; }
+    else if (c===',') { vals.push(cur.trim()); cur=''; }
+    else { cur+=c; }
+  }
+  vals.push(cur.trim());
+  return vals;
+}
+function parseCSV(csv) {
+  const lines = csv.trim().split(/\r?\n/);
+  if (lines.length < 2) return [];
+  const headers = splitCSVLine(lines[0]).map(h => h.replace(/^"|"$/g,'').toLowerCase());
+  return lines.slice(1).map(line => {
+    const vals = splitCSVLine(line).map(v => v.replace(/^"|"$/g,''));
+    const obj = {};
+    headers.forEach((h, i) => {
+      const v = vals[i] || '';
+      if (/^\d{4}-\d{2}-\d{2}$/.test(h)) {
+        obj[h] = ['true','1','yes','y'].includes(v.toLowerCase());
+      } else if (h === 'grade') {
+        obj[h] = v ? parseInt(v, 10) : null;
+      } else { obj[h] = v; }
+    });
+    return (obj.first_name || obj['first name']) ? obj : null;
+  }).filter(Boolean);
+}
+
+// ============================================================
+// ADMIN
+// ============================================================
+let _adminTab = 'settings';
+
+async function renderAdmin() {
+  if (S.user?.role !== 'admin') { go('home'); return; }
+  setApp(shell('<div class="loading"><div class="spin"></div></div>'));
+  const [settings, users] = await Promise.all([
+    API.get('/settings').catch(() => ({})),
+    API.get('/accounts/users').catch(() => []),
+  ]);
+  renderAdminView(settings, users);
+}
+
+async function renderAdminView(settings, users) {
+  // Change 4: four tabs including Audit
+  const tabs = ['settings','accounts','data','audit'];
+  const tabHtml = tabs.map(t => `<button class="tbbtn ${_adminTab===t?'on':''}" onclick="switchAdminTab('${t}')">${t.charAt(0).toUpperCase()+t.slice(1)}</button>`).join('');
+
+  let body = `<div class="ph"><div class="ph-title">⚙️ Admin</div></div>
+    <div class="tbbar">${tabHtml}</div>`;
+
+  if (_adminTab === 'settings') {
+    // Change 11: Allocation lock date field
+    const lockVal = settings.allocationLockDate ? new Date(settings.allocationLockDate).toISOString().split('T')[0] : '';
+    body += `<div class="card">
+      <div class="sh" style="margin-top:0">General</div>
+      <div class="fg"><label class="fl">Ministry Name</label><input class="fi" id="s-min" value="${settings.ministryName||''}"></div>
+      <div class="form-row">
+        <div class="fg"><label class="fl">Service Name</label><input class="fi" id="s-svc" value="${settings.serviceName||'Sunday Service'}"></div>
+        <div class="fg"><label class="fl">Group Name</label><input class="fi" id="s-grp" value="${settings.lifegroupName||'Lifegroup'}"></div>
+      </div>
+
+      <div class="sh">Allocation Lock</div>
+      <div class="fg">
+        <label class="fl">Allocation Lock Date</label>
+        <input class="fi" id="s-lock" type="date" value="${lockVal}">
+        <div class="help-text">Once this date passes, only admins can change allocations.</div>
+      </div>
+
+      <div class="sh">At-Risk Thresholds</div>
+      <p class="help-text" style="margin-bottom:10px">These control how attendance rates are classified. Regular = attended ≥ reg threshold. At-risk = attended &lt; risk threshold.</p>
+      <div class="form-row">
+        <div class="fg"><label class="fl">Regular Rate (e.g. 3/4 = 75%)</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input class="fi" id="s-rn" type="number" min="1" max="10" value="${settings.regRateNumerator||3}" style="width:60px">
+            <span style="color:var(--ink-mid)">/</span>
+            <input class="fi" id="s-rd" type="number" min="1" max="10" value="${settings.regRateDenominator||4}" style="width:60px">
+          </div>
+        </div>
+        <div class="fg"><label class="fl">At-Risk Rate (e.g. 1/2 = 50%)</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input class="fi" id="s-an" type="number" min="1" max="10" value="${settings.riskRateNumerator||1}" style="width:60px">
+            <span style="color:var(--ink-mid)">/</span>
+            <input class="fi" id="s-ad" type="number" min="1" max="10" value="${settings.riskRateDenominator||2}" style="width:60px">
+          </div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label class="fl">Valid Session Threshold %</label>
+          <input class="fi" id="s-vt" type="number" min="0" max="100" value="${settings.validThresholdPct||60}">
+          <div class="help-text">Sessions with attendance below this % are excluded</div>
+        </div>
+        <div class="fg"><label class="fl">Term Gap (days)</label>
+          <input class="fi" id="s-tg" type="number" min="1" max="90" value="${settings.termGapDays||14}">
+          <div class="help-text">Days between sessions = new term</div>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="saveSettings()">💾 Save Settings</button>
+    </div>`;
+  }
+
+  if (_adminTab === 'accounts') {
+    body += `<div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+      <button class="btn btn-primary btn-sm" onclick="showAddUser()">+ Add Account</button>
+    </div>`;
+
+    // Group-by-role for clarity at 12+ accounts
+    const roleOrder = ['admin','director','quad','grade'];
+    const roleLabels = { admin:'Admin', director:'Director', quad:'Quad Leaders', grade:'Grade Logins' };
+    const grouped = {};
+    for (const u of users) { if (!grouped[u.role]) grouped[u.role]=[]; grouped[u.role].push(u); }
+    // Sort grade logins by grade number, quads by quad label
+    if (grouped.grade) grouped.grade.sort((a,b) => (a.grade||0) - (b.grade||0));
+    if (grouped.quad) grouped.quad.sort((a,b) => (a.quad||'').localeCompare(b.quad||''));
+
+    for (const role of roleOrder) {
+      const group = grouped[role];
+      if (!group?.length) continue;
+      body += `<div class="role-group">
+        <div class="role-group-header">${roleLabels[role] || role} (${group.length})</div>`;
+      for (const u of group) {
+        const rl = u.role==='grade'?`Grade ${u.grade}`:u.role==='quad'?(QUAD_LABELS[u.quad]||u.quad):u.role.charAt(0).toUpperCase()+u.role.slice(1);
+        body += `<div class="li" style="cursor:default;margin-bottom:6px">
+          <div class="li-body">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <span class="li-title">${u.displayName}</span>
+              ${statusChip(u.status)}
+            </div>
+            <div class="li-sub">${u.email}</div>
+          </div>
+          <div class="li-right">
+            <button class="btn btn-ghost btn-sm" onclick="showEditUser('${u.id}')" title="Edit account" aria-label="Edit ${u.displayName}">✏️</button>
+            <button class="btn btn-ghost btn-sm" onclick="showSetPassword('${u.id}','${u.displayName.replace(/'/g,"\\'")}') " title="Reset password" aria-label="Reset password for ${u.displayName}">🔑</button>
+            <button class="btn btn-ghost btn-sm" onclick="toggleUserStatus('${u.id}','${u.status}')" title="${u.status==='active'?'Deactivate':'Activate'}" aria-label="${u.status==='active'?'Deactivate':'Activate'} ${u.displayName}">${u.status==='active'?'🔒':'🔓'}</button>
+            <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="confirmDelUser('${u.id}','${u.displayName.replace(/'/g,"\\'")}') " aria-label="Delete ${u.displayName}">🗑</button>
+          </div>
+        </div>`;
+      }
+      body += '</div>';
+    }
+  }
+
+  if (_adminTab === 'data') {
+    // Change 12: Visual separation of destructive actions
+    body += `<div class="card" style="display:flex;flex-direction:column;gap:10px">
+      <div>
+        <button class="btn btn-secondary btn-full" onclick="if(confirm('Save current users and leaders as year defaults?'))adminAction('/admin/save-defaults','✓ Defaults saved')">💾 Save Defaults</button>
+        <div class="help-text" style="margin-top:4px">Snapshots accounts + leaders as baseline for next year</div>
+      </div>
+      <div class="destructive-section">
+        <div class="destructive-header">⚠️ Destructive Actions</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div>
+            <button class="btn btn-secondary btn-full" onclick="if(confirm('This will delete all students and allocations. Continue?'))adminAction('/admin/new-year','✓ New year started')">🔄 New Year</button>
+            <div class="help-text" style="margin-top:4px">Clears students + allocations, keeps accounts and leaders</div>
+          </div>
+          <div>
+            <button class="btn btn-danger btn-full" onclick="if(confirm('⚠️ RESET ALL DATA? This cannot be undone.'))adminAction('/admin/reset','✓ Full reset complete')">⚠️ Full Reset</button>
+            <div class="help-text" style="margin-top:4px">Clears everything except user accounts</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // Change 4: Audit tab
+  if (_adminTab === 'audit') {
+    body += `<div id="audit-container"><div class="loading"><div class="spin"></div></div></div>`;
+    setApp(shell(body));
+    // Load audit entries async
+    try {
+      const entries = await API.get('/admin/audit');
+      let auditHtml = '';
+      if (!entries || !entries.length) {
+        auditHtml = '<div class="empty"><span class="empty-icon">📋</span><div class="empty-title">No audit entries</div><div class="empty-sub">Actions will appear here as they are performed</div></div>';
+      } else {
+        // Define chip colours for common action types
+        function auditChip(action) {
+          if (!action) return '';
+          const a = action.toLowerCase();
+          let cls = 'c-neutral';
+          if (a.includes('create') || a.includes('add') || a.includes('import')) cls = 'c-success';
+          else if (a.includes('delete') || a.includes('remove') || a.includes('reset')) cls = 'c-danger';
+          else if (a.includes('update') || a.includes('edit') || a.includes('patch') || a.includes('save')) cls = 'c-accent';
+          else if (a.includes('login') || a.includes('logout')) cls = 'c-warn';
+          return `<span class="chip ${cls}" style="font-size:11px">${action}</span>`;
+        }
+        auditHtml = '<div class="card" style="padding:14px">';
+        for (const e of entries) {
+          auditHtml += `<div class="audit-entry">
+            <div class="audit-dot"></div>
+            <div class="audit-body">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                ${auditChip(e.action)}
+                <span style="font-size:12px;color:var(--ink-mid)">${fmtDate(e.performedAt)}</span>
+              </div>
+              <div class="audit-who">by ${e.performedBy || 'system'}</div>
+              ${e.detail ? `<div class="audit-detail">${e.detail}</div>` : ''}
+            </div>
+          </div>`;
+        }
+        auditHtml += '</div>';
+      }
+      const container = document.getElementById('audit-container');
+      if (container) container.innerHTML = auditHtml;
+    } catch (err) {
+      const container = document.getElementById('audit-container');
+      if (container) container.innerHTML = `<div class="alert al-err">Failed to load audit log: ${err.message}</div>`;
+    }
+    return; // already called setApp above
+  }
+
+  setApp(shell(body));
+}
+
+let _adminData = { settings: {}, users: [] };
+
+async function switchAdminTab(tab) {
+  _adminTab = tab;
+  const [settings, users] = await Promise.all([
+    API.get('/settings').catch(() => ({})),
+    API.get('/accounts/users').catch(() => []),
+  ]);
+  _adminData = { settings, users };
+  await renderAdminView(settings, users);
+}
+
+async function saveSettings() {
+  try {
+    await API.patch('/settings', {
+      ministryName: document.getElementById('s-min')?.value?.trim(),
+      serviceName: document.getElementById('s-svc')?.value?.trim(),
+      lifegroupName: document.getElementById('s-grp')?.value?.trim(),
+      regRateNumerator: parseInt(document.getElementById('s-rn')?.value||'3',10),
+      regRateDenominator: parseInt(document.getElementById('s-rd')?.value||'4',10),
+      riskRateNumerator: parseInt(document.getElementById('s-an')?.value||'1',10),
+      riskRateDenominator: parseInt(document.getElementById('s-ad')?.value||'2',10),
+      validThresholdPct: parseInt(document.getElementById('s-vt')?.value||'60',10),
+      termGapDays: parseInt(document.getElementById('s-tg')?.value||'14',10),
+      // Change 11: include allocationLockDate
+      allocationLockDate: document.getElementById('s-lock')?.value || null,
+    });
+    toast('Settings saved');
+  } catch (e) { toast(e.message); }
+}
+
+async function adminAction(path, msg) {
+  try { await API.post(path, {}); toast(msg); go('home'); } catch (e) { toast(e.message); }
+}
+
+// Account modals
+// Change 6: auto-suggest email on account creation
+function suggestEmail() {
+  const role = document.getElementById('u-role')?.value;
+  const emailEl = document.getElementById('u-email');
+  if (!emailEl) return;
+  let suggested = '';
+  if (role === 'grade') {
+    const grade = document.getElementById('u-grade')?.value;
+    if (grade) suggested = `grade${grade}@youth.ministry`;
+  } else if (role === 'quad') {
+    const quad = document.getElementById('u-quad')?.value;
+    if (quad) suggested = `${quad}@youth.ministry`;
+  } else if (role === 'director') {
+    suggested = 'director@youth.ministry';
+  } else if (role === 'admin') {
+    suggested = 'admin@youth.ministry';
+  }
+  if (suggested) emailEl.value = suggested;
+}
+
+function showAddUser() {
+  modal(`
+    <div class="mo-title">Add Account</div>
+    <div id="uerr"></div>
+    <div class="fg"><label class="fl">Display Name</label><input class="fi" id="u-name" placeholder="Grade 9"></div>
+    <div class="fg"><label class="fl">Email</label><input class="fi" id="u-email" type="email" placeholder="grade9@youth.ministry"></div>
+    <div class="fg"><label class="fl">Password</label><input class="fi" id="u-pw" type="password" placeholder="Min 6 chars"></div>
+    <div class="fg"><label class="fl">Role</label>
+      <select class="fs" id="u-role" onchange="toggleUserRoleFields();suggestEmail()">
+        <option value="grade">Grade</option>
+        <option value="quad">Quad</option>
+        <option value="director">Director</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+    <div id="u-grade-f" class="fg">
+      <label class="fl">Grade</label>
+      <select class="fs" id="u-grade" onchange="suggestEmail()">${[7,8,9,10,11,12].map(g=>`<option value="${g}">${g}</option>`).join('')}</select>
+    </div>
+    <div id="u-quad-f" class="fg" style="display:none">
+      <label class="fl">Quad</label>
+      <select class="fs" id="u-quad" onchange="suggestEmail()">
+        <option value="g79">Girls Yr 7–9</option><option value="b79">Boys Yr 7–9</option>
+        <option value="g1012">Girls Yr 10–12</option><option value="b1012">Boys Yr 10–12</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="submitAddUser()">Create</button>
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+    </div>`);
+  // Trigger initial email suggestion for default role (grade)
+  suggestEmail();
+}
+
+function toggleUserRoleFields() {
+  const role = document.getElementById('u-role')?.value;
+  document.getElementById('u-grade-f').style.display = role==='grade'?'block':'none';
+  document.getElementById('u-quad-f').style.display = role==='quad'?'block':'none';
+}
+
+async function submitAddUser() {
+  const displayName = document.getElementById('u-name')?.value?.trim();
+  const email = document.getElementById('u-email')?.value?.trim();
+  const password = document.getElementById('u-pw')?.value;
+  const role = document.getElementById('u-role')?.value;
+  const grade = role==='grade' ? parseInt(document.getElementById('u-grade')?.value||'7',10) : null;
+  const quad = role==='quad' ? document.getElementById('u-quad')?.value : null;
+  const errEl = document.getElementById('uerr');
+  if (!displayName || !email || !password) { errEl.innerHTML='<div class="alert al-err">All fields required</div>'; return; }
+  try {
+    await API.post('/accounts/users', { displayName, email, password, role, grade, quad });
+    closeModal(); toast('Account created'); await renderAdmin();
+  } catch (e) { errEl.innerHTML=`<div class="alert al-err">${e.message}</div>`; }
+}
+
+async function showEditUser(id) {
+  let u; try { u = (await API.get('/accounts/users')).find(x => x.id===id); } catch {}
+  if (!u) { toast('User not found'); return; }
+  modal(`
+    <div class="mo-title">Edit Account</div>
+    <div id="uerr"></div>
+    <div class="fg"><label class="fl">Display Name</label><input class="fi" id="u-name" value="${u.displayName}"></div>
+    <div class="fg"><label class="fl">Role</label>
+      <select class="fs" id="u-role" onchange="toggleUserRoleFields()">
+        ${['grade','quad','director','admin'].map(r=>`<option value="${r}" ${r===u.role?'selected':''}>${r.charAt(0).toUpperCase()+r.slice(1)}</option>`).join('')}
+      </select>
+    </div>
+    <div id="u-grade-f" class="fg" style="${u.role!=='grade'?'display:none':''}">
+      <label class="fl">Grade</label>
+      <select class="fs" id="u-grade">${[7,8,9,10,11,12].map(g=>`<option value="${g}" ${g===u.grade?'selected':''}>${g}</option>`).join('')}</select>
+    </div>
+    <div id="u-quad-f" class="fg" style="${u.role!=='quad'?'display:none':''}">
+      <label class="fl">Quad</label>
+      <select class="fs" id="u-quad">${['g79','b79','g1012','b1012'].map(q=>`<option value="${q}" ${q===u.quad?'selected':''}>${QUAD_LABELS[q]||q}</option>`).join('')}</select>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="submitEditUser('${id}')">Save</button>
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+    </div>`);
+}
+
+async function submitEditUser(id) {
+  const displayName = document.getElementById('u-name')?.value?.trim();
+  const role = document.getElementById('u-role')?.value;
+  const grade = role==='grade' ? parseInt(document.getElementById('u-grade')?.value||'7',10) : null;
+  const quad = role==='quad' ? document.getElementById('u-quad')?.value : null;
+  try {
+    await API.patch(`/accounts/users/${id}`, { displayName, role, grade, quad });
+    closeModal(); toast('Account updated'); await renderAdmin();
+  } catch (e) { document.getElementById('uerr').innerHTML=`<div class="alert al-err">${e.message}</div>`; }
+}
+
+function showSetPassword(id, name) {
+  modal(`
+    <div class="mo-title">Reset Password</div>
+    <p style="color:var(--ink-mid);margin-bottom:14px">Set a new password for <strong>${name}</strong></p>
+    <div id="uerr"></div>
+    <div class="fg"><label class="fl">New Password (min 6 chars)</label><input class="fi" id="u-newpw" type="password" placeholder="New password"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" onclick="submitSetPassword('${id}')">Set Password</button>
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+    </div>`);
+}
+
+async function submitSetPassword(id) {
+  const password = document.getElementById('u-newpw')?.value;
+  if (!password || password.length < 6) { document.getElementById('uerr').innerHTML='<div class="alert al-err">Password must be at least 6 characters</div>'; return; }
+  try {
+    await API.post('/accounts/users/password', { id, password });
+    closeModal(); toast('Password updated');
+  } catch (e) { document.getElementById('uerr').innerHTML=`<div class="alert al-err">${e.message}</div>`; }
+}
+
+async function toggleUserStatus(id, currentStatus) {
+  try {
+    await API.patch(`/accounts/users/${id}/status`, {});
+    toast(currentStatus==='active' ? 'Account deactivated' : 'Account activated');
+    await renderAdmin();
+  } catch (e) { toast(e.message); }
+}
+
+function confirmDelUser(id, name) {
+  modal(`<div class="mo-title">Delete Account?</div>
+    <p style="color:var(--ink-mid);margin-bottom:20px">Delete account for <strong>${name}</strong>?</p>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-danger" style="flex:1" onclick="API.del('/accounts/users/${id}').then(()=>{closeModal();toast('Account deleted');renderAdmin()}).catch(e=>toast(e.message))">Delete</button>
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+    </div>`);
+}
+
+// ============================================================
+// BOOT
+// ============================================================
+async function boot() {
+  const token = localStorage.getItem('yap_token');
+  if (token) {
+    try { const user = await API.get('/auth/me'); S.user = user; } catch { API.setToken(null); }
+  }
+  restoreAllocFilters();
+  restoreArFilter();
+  if (S.user) {
+    try { S.settings = await API.get('/settings'); } catch { S.settings = {}; }
+  }
+  render();
+}
+
+boot();
+</script>
+</body>
+</html>
