@@ -18,6 +18,7 @@
   --shadow-md:0 4px 6px rgba(0,0,0,.07),0 2px 4px rgba(0,0,0,.06);
   --font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
   --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-t:env(safe-area-inset-top,0px);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{font-size:16px;-webkit-text-size-adjust:100%}
@@ -27,7 +28,7 @@ input,select,textarea{font-family:inherit;font-size:inherit}
 #app{display:flex;flex-direction:column;min-height:100vh}
 
 /* Header */
-.hdr{background:var(--accent);color:#fff;padding:0 16px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:var(--shadow-md)}
+.hdr{background:var(--accent);color:#fff;padding:var(--safe-t) 16px 0;height:calc(56px + var(--safe-t));box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:var(--shadow-md)}
 .hdr h1{font-size:17px;font-weight:700}
 .hdr-meta{display:flex;align-items:center;gap:10px}
 .role-badge{background:rgba(255,255,255,.2);border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600;text-transform:uppercase;white-space:nowrap}
@@ -49,7 +50,7 @@ input,select,textarea{font-family:inherit;font-size:inherit}
 @media(min-width:768px){.bot-nav{display:none}}
 
 /* Page */
-.pg{flex:1;padding:16px;max-width:680px;margin:0 auto;width:100%}
+.pg{flex:1;padding:16px;max-width:680px;margin:0 auto;width:100%;overflow-x:hidden}
 @media(min-width:768px){.pg{padding:24px;max-width:1000px}}
 
 /* Cards */
