@@ -29,9 +29,9 @@ describe('RBAC — can()', () => {
     expect(can(actor('grade', { grade: 9 }), 'admin:manage')).toBe(false);
   });
 
-  // TC05 — quad login cannot write leaders
-  it('TC05: quad cannot write leaders', () => {
-    expect(can(actor('quad', { quad: 'g79' }), 'leader:write')).toBe(false);
+  // TC05 — quad login CAN write leaders (scoped to gender + bracket; see leader.service.test)
+  it('TC05: quad can write leaders', () => {
+    expect(can(actor('quad', { quad: 'g79' }), 'leader:write')).toBe(true);
   });
 
   // TC06 — quad login can allocate

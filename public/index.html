@@ -439,6 +439,10 @@ function fmtDM(d) {
   return dt.getUTCDate()+'/'+(dt.getUTCMonth()+1);
 }
 
+// Quad helpers (gender + year bracket) — mirror backend quadGenderOf/quadGradesOf
+function quadGrades(q) { return (q === 'g79' || q === 'b79') ? [7, 8, 9] : (q === 'g1012' || q === 'b1012') ? [10, 11, 12] : []; }
+function quadGender(q) { return (q === 'g79' || q === 'g1012') ? 'female' : (q === 'b79' || q === 'b1012') ? 'male' : null; }
+
 function navItems() {
   const u = S.user; if (!u) return [];
   // Grade: Home | My Students | Trends | At Risk  (Leaders & Alloc + Student Search in quick actions)
@@ -811,16 +815,15 @@ async function renderLeaders() {
   const countByLeader = {};
   for (const a of allocsRaw) countByLeader[a.leaderId] = (countByLeader[a.leaderId] || 0) + 1;
   const u = S.user;
-  const canEdit = ['grade','director','admin'].includes(u.role);
+  const canEdit = ['grade','quad','director','admin'].includes(u.role);
 
   let body = `<div class="ph"><div style="display:flex;align-items:center;justify-content:space-between">
     <div><div class="ph-title">Leaders</div><div class="ph-sub">${leaders.length} active</div></div>
     ${canEdit ? `<button class="btn btn-primary btn-sm" onclick="showAddLeader()">+ Add</button>` : ''}
   </div></div>`;
 
-  // Change 9: quad read-only info banner
   if (u.role === 'quad') {
-    body += `<div class="alert al-info">👁 You can view leaders in your quad. Contact a grade login to make changes.</div>`;
+    body += `<div class="alert al-info">✏️ You can add, edit and allocate leaders within your quad (${u.quad ? quadGender(u.quad) : ''} · Yr ${quadGrades(u.quad).join('–') || '—'}).</div>`;
   }
 
   if (canEdit) {
@@ -917,15 +920,20 @@ async function showLeaderDetail(id) {
 
 function showAddLeader() {
   const u = S.user;
-  const gcbs = [7,8,9,10,11,12].map(g =>
+  const allowedGrades = u.role === 'quad' ? quadGrades(u.quad) : [7,8,9,10,11,12];
+  const gcbs = allowedGrades.map(g =>
     `<label style="display:flex;align-items:center;gap:6px;margin-bottom:5px"><input type="checkbox" value="${g}" class="gcb" ${u.role==='grade'&&u.grade===g?'checked disabled':''}> Grade ${g}</label>`
   ).join('');
+  const qg = u.role === 'quad' ? quadGender(u.quad) : null;
+  const genderField = qg
+    ? `<div class="fg"><label class="fl">Gender</label><select class="fs" id="lg"><option value="${qg}" selected>${qg==='female'?'Female':'Male'}</option></select><p style="font-size:11px;color:var(--ink-mid);margin-top:3px">Scoped to your quad</p></div>`
+    : `<div class="fg"><label class="fl">Gender</label><select class="fs" id="lg"><option value="">Any gender</option><option value="female">Female</option><option value="male">Male</option></select></div>`;
   modal(`
     <div class="mo-title">Add Leader</div>
     <div id="le"></div>
     <div class="fg"><label class="fl">Full Name *</label><input class="fi" id="ln" placeholder="Sarah Mitchell"></div>
-    <div class="fg"><label class="fl">Gender</label><select class="fs" id="lg"><option value="">Any gender</option><option value="female">Female</option><option value="male">Male</option></select></div>
-    ${u.role!=='grade'?`<div class="fg"><label class="fl">Grade Focus (leave blank = all)</label>${gcbs}</div>`:'<p style="font-size:12px;color:var(--ink-mid);margin-bottom:12px">Leader will be scoped to your grade automatically</p>'}
+    ${genderField}
+    ${u.role!=='grade'?`<div class="fg"><label class="fl">Grade Focus${u.role==='quad'?' (your bracket)':' (leave blank = all)'}</label>${gcbs}</div>`:'<p style="font-size:12px;color:var(--ink-mid);margin-bottom:12px">Leader will be scoped to your grade automatically</p>'}
     <div style="display:flex;gap:8px">
       <button class="btn btn-primary" style="flex:1" onclick="submitAddLeader()">Add Leader</button>
       <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
@@ -946,18 +954,24 @@ async function submitAddLeader() {
 
 async function showEditLeader(id) {
   let l; try { l = await API.get(`/leaders/${id}`); } catch { toast('Not found'); return; }
-  const gcbs = [7,8,9,10,11,12].map(g =>
+  const u = S.user;
+  const allowedGrades = u.role === 'quad' ? quadGrades(u.quad) : [7,8,9,10,11,12];
+  const gcbs = allowedGrades.map(g =>
     `<label style="display:flex;align-items:center;gap:6px;margin-bottom:5px"><input type="checkbox" value="${g}" class="gcb" ${l.grades?.includes(g)?'checked':''}> Grade ${g}</label>`
   ).join('');
+  const qg = u.role === 'quad' ? quadGender(u.quad) : null;
+  const genderField = qg
+    ? `<div class="fg"><label class="fl">Gender</label><select class="fs" id="lg"><option value="${qg}" selected>${qg==='female'?'Female':'Male'}</option></select></div>`
+    : `<div class="fg"><label class="fl">Gender</label><select class="fs" id="lg">
+      <option value="" ${!l.gender?'selected':''}>Any</option>
+      <option value="female" ${l.gender==='female'?'selected':''}>Female</option>
+      <option value="male" ${l.gender==='male'?'selected':''}>Male</option>
+    </select></div>`;
   modal(`
     <div class="mo-title">Edit Leader</div>
     <div id="le"></div>
     <div class="fg"><label class="fl">Full Name</label><input class="fi" id="ln" value="${l.fullName}"></div>
-    <div class="fg"><label class="fl">Gender</label><select class="fs" id="lg">
-      <option value="" ${!l.gender?'selected':''}>Any</option>
-      <option value="female" ${l.gender==='female'?'selected':''}>Female</option>
-      <option value="male" ${l.gender==='male'?'selected':''}>Male</option>
-    </select></div>
+    ${genderField}
     <div class="fg"><label class="fl">Grade Focus</label>${gcbs}</div>
     <div class="fg"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px"><input type="checkbox" id="la" ${l.active?'checked':''}> Active</label></div>
     <div style="display:flex;gap:8px">

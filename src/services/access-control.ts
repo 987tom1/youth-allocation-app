@@ -26,11 +26,12 @@ const ROLE_PERMISSIONS: Record<UserRole, Set<Action>> = {
     'overview:read',
     'atrisk:read',
   ]),
-  // quad — read-only across their quad; sees leaders and allocations
+  // quad — full add/edit/allocate within their gender + year bracket
   quad: new Set<Action>([
     'student:read',
     'student:read:sensitive',
     'leader:read',
+    'leader:write',
     'allocation:write',
     'overview:read',
     'atrisk:read',
@@ -108,6 +109,20 @@ export function assertCanAccessGrade(actor: Actor, grade: number | null): void {
  * Returns true if the actor's gender scope aligns with the given gender.
  * Quad logins are gender-scoped; grade and above see all genders.
  */
+/** The gender a quad login is scoped to (female for g-quads, male for b-quads). */
+export function quadGenderOf(quad: string | null | undefined): 'male' | 'female' | null {
+  if (quad === 'g79' || quad === 'g1012') return 'female';
+  if (quad === 'b79' || quad === 'b1012') return 'male';
+  return null;
+}
+
+/** The year bracket a quad login is scoped to. */
+export function quadGradesOf(quad: string | null | undefined): number[] {
+  if (quad === 'g79' || quad === 'b79') return [7, 8, 9];
+  if (quad === 'g1012' || quad === 'b1012') return [10, 11, 12];
+  return [];
+}
+
 export function canAccessGender(actor: Actor, gender: string): boolean {
   if (actor.role === 'admin' || actor.role === 'director' || actor.role === 'grade') return true;
   if (actor.role === 'quad') {
