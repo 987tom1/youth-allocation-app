@@ -1293,13 +1293,27 @@ async function removeAllocWithUndo(studentId, leaderId, studentName, leaderName)
 // MY STUDENTS (leader self-view — replaces Allocate in bottom nav)
 // ============================================================
 let _msLeader = null;
+let _lvF = { year: new Set(), gender: new Set() }; // My Students filters (narrow the leader dropdown)
+function tLvF(type, val) {
+  const set = type === 'year' ? _lvF.year : _lvF.gender;
+  const v = type === 'year' ? Number(val) : val;
+  set.has(v) ? set.delete(v) : set.add(v);
+  renderMyStudents();
+}
+function fmtBday(iso) {
+  if (!iso) return '';
+  const p = String(iso).split('T')[0].split('-');
+  return p.length === 3 ? `${p[2]}-${p[1]}-${p[0]}` : String(iso);
+}
 
 async function renderMyStudents() {
   setApp(shell('<div class="loading"><div class="spin"></div></div>'));
-  const [leaders, allocsRaw] = await Promise.all([
+  const [leaders, allStudents] = await Promise.all([
     API.get('/leaders').catch(() => []),
-    API.get('/allocations').catch(() => []),
+    API.get('/students').catch(() => []),
   ]);
+  const bdayOf = {};
+  for (const s of allStudents) bdayOf[s.id] = s.dateOfBirth;
 
   let body = `<div class="ph"><div class="ph-title">My Students</div><div class="ph-sub">Select a leader to view their students</div></div>`;
 
@@ -1309,7 +1323,19 @@ async function renderMyStudents() {
     return;
   }
 
-  const opts = leaders.map(l => `<option value="${l.id}" ${_msLeader === l.id ? 'selected' : ''}>${l.fullName} (Gr ${l.grades?.join(', ') || 'All'} · ${l.gender || 'any gender'})</option>`).join('');
+  // Year + gender filter chips that narrow the leader dropdown
+  const yearChips = [7, 8, 9, 10, 11, 12].map(g =>
+    `<button class="chip ${_lvF.year.has(g) ? 'c-accent' : 'c-neutral'}" style="cursor:pointer;border:none" onclick="tLvF('year','${g}')">Yr ${g}</button>`).join('');
+  const genderChips = [['female', '♀ Girls'], ['male', '♂ Guys']].map(([v, lbl]) =>
+    `<button class="chip ${_lvF.gender.has(v) ? 'c-accent' : 'c-neutral'}" style="cursor:pointer;border:none" onclick="tLvF('gender','${v}')">${lbl}</button>`).join('');
+  body += `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${yearChips}${genderChips}</div>`;
+
+  let visLeaders = leaders;
+  if (_lvF.year.size) visLeaders = visLeaders.filter(l => (l.grades || []).length === 0 || l.grades.some(g => _lvF.year.has(g)));
+  if (_lvF.gender.size) visLeaders = visLeaders.filter(l => _lvF.gender.has(l.gender));
+  if (_msLeader && !visLeaders.some(l => l.id === _msLeader)) _msLeader = null;
+
+  const opts = visLeaders.map(l => `<option value="${l.id}" ${_msLeader === l.id ? 'selected' : ''}>${l.fullName} (Gr ${l.grades?.join(', ') || 'All'} · ${l.gender || 'any gender'})</option>`).join('');
   body += `<div class="fg"><label class="fl">I am…</label><select class="fs" onchange="_msLeader=this.value;renderMyStudents()"><option value="">— Choose a leader —</option>${opts}</select></div>`;
 
   if (_msLeader) {
@@ -1332,17 +1358,20 @@ async function renderMyStudents() {
     } else {
       for (const s of students) {
         const pct = s.svcTotal > 0 ? Math.round(s.svcAttended / s.svcTotal * 100) : null;
-        const pc = pct !== null ? (pct >= 70 ? 'var(--success)' : pct >= 40 ? 'var(--warn)' : 'var(--danger)') : null;
-        body += `<div class="li" style="cursor:default">
+        const pc = pct !== null ? (pct >= 70 ? 'var(--success)' : pct >= 40 ? 'var(--warn)' : 'var(--danger)') : 'var(--ink-mid)';
+        const gpct = s.grpTotal > 0 ? Math.round(s.grpAttended / s.grpTotal * 100) : null;
+        const bd = fmtBday(bdayOf[s.id]);
+        body += `<div class="li" style="cursor:pointer" onclick="showStudentDetail('${s.id}')">
           <div class="li-body">
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-              <span class="li-title">${s.fullName}</span>
-              ${riskChip(s.atRiskStatus)}
+              <span class="li-title">${s.fullName}</span>${riskChip(s.atRiskStatus)}
             </div>
-            <div class="li-sub">Gr ${s.grade || '—'} · ${s.gender}</div>
-            ${pct !== null ? `<div style="font-size:13px;font-weight:700;color:${pc};margin-top:4px">Fridays ${pct}% (${s.svcAttended}/${s.svcTotal})</div>` : ''}
-            ${s.mobile ? `<div style="font-size:12px;color:var(--ink-mid);margin-top:2px">📱 ${s.mobile}</div>` : ''}
-            ${s.parentPhone ? `<div style="font-size:12px;color:var(--ink-mid);margin-top:2px">👪 ${s.parentPhone}</div>` : ''}
+            <div class="li-sub">Yr ${s.grade || '—'} · ${s.gender}${bd ? ' · 🎂 ' + bd : ''}</div>
+            <div style="display:flex;gap:14px;margin-top:4px;font-size:12px">
+              <span style="font-weight:700;color:${pc}">Fridays ${pct !== null ? pct + '% (' + s.svcAttended + '/' + s.svcTotal + ')' : '—'}</span>
+              <span style="color:var(--ink-mid)">Lifegroup ${gpct !== null ? gpct + '% (' + s.grpAttended + '/' + s.grpTotal + ' wk)' : '—'}</span>
+            </div>
+            ${(s.mobile || s.parentPhone) ? `<div style="font-size:12px;color:var(--ink-mid);margin-top:2px">${s.mobile ? '📱 ' + s.mobile : ''}${s.mobile && s.parentPhone ? ' · ' : ''}${s.parentPhone ? '👪 ' + s.parentPhone : ''}</div>` : ''}
           </div>
         </div>`;
       }
