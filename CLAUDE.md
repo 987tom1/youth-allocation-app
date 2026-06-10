@@ -1,6 +1,6 @@
 # CLAUDE.md — Youth Allocation Platform
 
-> **Scope:** the real **youth allocation** app — TS/Express backend (`src/`) + `public/index.html` SPA. The offline demo and its full UI conventions live in `../youth app demo/CLAUDE.md`; this SPA is kept aligned to that demo. Project map: `../CLAUDE.md`. Sibling app: `../Camp Platform/CLAUDE.md`.
+> **Scope:** the real **youth allocation** app — TS/Express backend (`src/`) + `public/index.html` SPA. The offline demo and its full UI conventions live in `../youth app demo/CLAUDE.md`; this SPA is kept aligned to that demo. Project map: `../CLAUDE.md`. Sibling app: `../Camp Platform/CLAUDE.md`. Change workflow: `../CHANGE-PROMPTS.md`.
 
 Guidance for Claude Code when working in this package.
 
@@ -122,6 +122,30 @@ The demo's UI conventions now live with the demo: **`../youth app demo/CLAUDE.md
 - The demo computes everything from its full in-memory mock; the real SPA only shows what the Express API returns. Where the API lacks demo-only data — per-student attendance/lifegroup **dot rows** and **unique-attender counts** — the SPA **approximates with real aggregates** (Fridays/Lifegroup % and counts). No per-week lifegroup tracking was added.
 - **The server enforces what the demo did client-side:** allocation de-dup lives in `POST /allocations` (no client `addAllocation`/`dedupeAllocations`); quad add/edit/allocate is authorised by the backend (`leader:write` + `quadGenderOf`/`quadGradesOf` scoping, tested in `src/tests/leader.service.test.ts`).
 - **Function names differ** from the demo: `showStudentDetail`/`assignSD`/`unassignSD`/`sdLeaderSearch`, `openStudentPicker`/`remPick`/`pickerSyncBg`, `renderMyStudents` (+`_lvF`/`tLvF`), `renderHome` (+`_hAttTile`/`toggleHomeQuad`), `grpBar`/`trendArrow`. Phone-mode uses `env(safe-area-inset-top)` (var `--safe-t`) rather than the demo's fixed `padding-top:50px`.
+
+## Demo ↔ real SPA function map
+
+When aligning `public/index.html` to `../youth app demo/allocation-platform.html`, use this to jump straight to the matching code instead of reading/diffing whole files. **Same-named** functions are omitted — `render`, `go`, `renderHome`, `renderLeaders`, `renderTrends`, `renderAtRisk`, `statCard`, `avgAtt`, `grpBar`, `trendArrow`, `quadGender`, `quadGrades`, `fmtBday`, `toggleHomeQuad`, `_homeQuadOpen`, `_trQuadOpen`, `_trGradeOpen`, `_lvF`, `tLvF`, `remPick`, `pickerSyncBg`, `assignSD`, `unassignSD`, `sdLeaderSearch`, `sdEligibleLeaders` all keep their names.
+
+| Demo (`allocation-platform.html`) | Real SPA (`public/index.html`) |
+|-----------------------------------|--------------------------------|
+| `_DB` + `MockAPI` / `api()` | real `fetch` via the `API` helper (`API.get/post/patch/del`) |
+| `overview(actor)` (local compute) | `GET /overview` |
+| `buildTrends()` | `GET /trends` |
+| `scopeS` / `scopeL` (client scoping) | server-side scoping — the API already returns scoped data |
+| `showSD` | `showStudentDetail` |
+| `openPicker` | `openStudentPicker` |
+| `addPick` | `addAllocFromPicker` |
+| `fPicker` | `filterPicker` |
+| `renderLeaderView` | `renderMyStudents` |
+| `attTile` | `_hAttTile` |
+| `homeGradeMini` | `_hGradeMini` |
+| `svcSessFor` (per-session from `hist`) | no equivalent — avg comes from `/trends`, uniques counted from `/students` |
+| `glHist` (synthesised lifegroup dots) | no equivalent — approximated by Lifegroup aggregates (no per-week data) |
+| `renderAllocate` / `renderMyQuad` / `renderQuadView` | router redirects `allocate`/`my-quad`/`quad-view` → `renderLeaders` |
+| `persist()` / `restorePersistedData()` (localStorage) | no equivalent — state lives in the backend |
+
+> Keep this table current when a Tier‑2/3 change adds or renames a ported function.
 
 ## Environment variables
 
