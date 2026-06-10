@@ -6,6 +6,7 @@ import {
   InMemoryStudentRepository,
   InMemoryLeaderRepository,
   InMemoryAllocationRepository,
+  InMemorySettingsRepository,
 } from '../repositories/in-memory';
 import type { Actor } from '../core/entities/user';
 import { BadRequestError, ForbiddenError, ConflictError } from '../core/errors/app-error';
@@ -22,13 +23,15 @@ async function buildServices() {
   const studentRepo = new InMemoryStudentRepository();
   const leaderRepo = new InMemoryLeaderRepository();
   const allocRepo = new InMemoryAllocationRepository();
+  const settingsRepo = new InMemorySettingsRepository();
   await studentRepo.init();
   await leaderRepo.init();
   await allocRepo.init();
+  await settingsRepo.init();
 
   const studentSvc = makeStudentService(studentRepo);
   const leaderSvc = makeLeaderService(leaderRepo);
-  const allocSvc = makeAllocationService(allocRepo, studentRepo, leaderRepo);
+  const allocSvc = makeAllocationService(allocRepo, studentRepo, leaderRepo, settingsRepo);
 
   // Seed a student in grade 9 female
   const student = await studentSvc.create(ADMIN, {
