@@ -1,5 +1,7 @@
 # CLAUDE.md — Youth Allocation Platform
 
+> **Scope:** the real **youth allocation** app — TS/Express backend (`src/`) + `public/index.html` SPA. The offline demo and its full UI conventions live in `../youth app demo/CLAUDE.md`; this SPA is kept aligned to that demo. Project map: `../CLAUDE.md`. Sibling app: `../Camp Platform/CLAUDE.md`.
+
 Guidance for Claude Code when working in this package.
 
 > **Canonical demo location:** the maintained, deployed offline demo is
@@ -110,52 +112,14 @@ Grade logins can search for and allocate students from OTHER grades as long as t
 
 Quick login buttons in the demo: admin, director, g79, b79, grade7f, grade7m, grade10f, grade10m
 
-## Demo-site UI patterns
+## Demo-site UI patterns → moved
 
-The demo (`demo-site/allocation-platform.html`) is a standalone single-file app. Key conventions:
+The demo's UI conventions now live with the demo: **`../youth app demo/CLAUDE.md`** ("Demo-site UI patterns" section). `public/index.html` is kept **aligned** to `../youth app demo/allocation-platform.html` (last aligned 2026-06-10).
 
-- **App name**: "YS Brisbane" (not "Youth Allocation")
-- **Bottom nav** (4 tabs, role-specific):
-  - Grade: Home | My Students | Trends | At Risk
-  - Quad: Home | Leaders & Alloc | Trends | At Risk
-  - Director: Home | Leaders & Alloc | Trends | At Risk
-  - Admin: Home | Leaders & Alloc | Trends | At Risk
-- **Quick Actions** on Home = `navItems().slice(4)` — items that overflow the bottom 4. Appear as tiles **above** the quad/grade overview cards.
-  - Grade: Leaders & Alloc | Student Search
-  - Quad: Student Search | My Students
-  - Director: Student Search | My Students | Import
-  - Admin: Student Search | My Students | Import | Admin
-- **Leaders & Allocation** (`leaders` route) is a merged page for all roles — leader cards with capacity gauges, student picker, add/edit/remove. Grade filter chips for quad (bracket only); grade + gender filter chips for director/admin. `renderAllocate()`, `renderMyQuad()`, `renderQuadView()` all redirect to `go('leaders')`. **Quads now have the same add/edit/allocate powers** (scoped to their gender + bracket via `scopeL`/`scopeS`); the old view-only banner is gone. The editable-roles flag `ce` includes `quad`. Helpers `quadGender(q)` / `quadGrades(q)` derive the quad's gender and year bracket.
-- **Home hero card** shows a compact 2-row table (Youth row + Groups row, Unique + Avg/wk columns) for this term, plus previous-term in matching format. (The old collapsible "Grade detail" dropdown was removed.) Row label format: `Youth (N)` and `Groups (N)` where N is sessions/weeks run.
-- **Grade logins**: home shows allocation summary as a compact 4-column single-row strip (Total / Alloc / Pending / At Risk). No "By Quad" cards.
-- **Director/Admin home**: "Attendance by Quad" tiles (Youth + Groups, Unique + Avg) — each tile is **tappable to expand inline** into per-grade rows (`_homeQuadOpen` + `toggleHomeQuad`). **Quad home** gets an equivalent "Attendance by Grade" tile per year in its bracket. Shared helpers: `attTile()`, `svcSessFor()`, `homeGradeMini()`.
-- **Student detail modal** (`showSD`): besides contact + attendance, the **Leader Assignments** section lists current leaders (deduped) with inline Remove, plus a **"Search a leader to assign"** box (`sdLeaderSearch` / `sdEligibleLeaders` / `assignSD` / `unassignSD`) that lists eligible leaders (actor scope ∩ student gender + grade) and assigns in place, re-rendering both the modal and the page behind.
-- **My Students** (`renderLeaderView`): condensed rows (name + yr/gender/bday inline; student + parent number on one line); birthday via `fmtBday` → `DD-MM-YYYY`; two dot rows — green Fridays (`s.hist`) and **teal lifegroups** (synthesised by `glHist(s)`, not stored); Year/Gender filter buttons (`_lvF`) that narrow the leader dropdown (quad: years in bracket; director/admin: years + gender).
-- **Add-Students picker** (`openPicker`): sticky header with an always-visible ✕ close; assigned rows have a `−` de-allocate (`remPick`); add/remove call `pickerSyncBg()` (`render()`) so the Leaders page behind stays current. Inserts go through `addAllocation()` (no duplicates).
-- **At Risk**: declining students (50–75%) now carry seeded previous-term data, so the small "Prev term" line + trend arrow show for them too (not just at-risk/stopped).
-- **Trends page — three-number stat card** (`statCard` helper):
-  - Every Fridays chart is followed by a 3-column stat card: **Unique attenders · Avg students/session · Avg sessions/student**, each with a `prev: N` comparison line.
-  - Every Lifegroups section uses the same 3-column card plus a `grpBar` breadth bar (unique/enrolled ratio with fill colour).
-  - `statCard(nums, labels, prevs)` — variable column count (2 or 3), auto-adjusts font size.
-  - `grpBar(uniq, enrolled)` — renders the breadth bar.
-  - `avgAtt(sessions)` — computes avg headcount from session array.
-  - `twoNum(n1,l1,n2,l2,prevLine)` — thin wrapper around `statCard` for 2-column use.
-- **Trends Fridays drill-down**:
-  - Grade: ministry overview chart + grade-specific chart with 3-number card.
-  - Quad: ministry overview + quad chart with 3-number card + per-grade inline rows.
-  - Director/Admin: collapsible quad cards (show inline Unique/Avg when collapsed) → expand for chart + 3-number card → collapsible grade rows → expand for grade chart + 3-number card. `_trQuadOpen` (quad key) and `_trGradeOpen` (grade number) control expand state.
-- **Trends Lifegroups drill-down**:
-  - `lifegroupStats(scope)` returns per-lifegroup stats including `weeksRun`, `avgPerSess` (avg students/session), `avg` (avg sessions/student).
-  - Grade: shows individual lifegroup cards directly (no expand needed).
-  - Quad: overview card + per-grade cards that expand to individual groups.
-  - Director/Admin: same as quad but all 6 grades.
-  - `_trGradeOpen` (null or grade number) controls which grade is expanded.
-- **Trends scroll preservation**: `renderTrends` saves `.pg.scrollTop` before `setApp()` and restores it via `requestAnimationFrame` after render, so expand/collapse dropdowns don't jump to the top.
-- **Lifegroup stats** count only enrolled students (`gT > 0`) — not the full cohort.
-- **Demo localStorage persistence**: the demo persists `allocations`, `leaders`, `settings`, `importHistory`, `auditLog`, and `_c` (ID counter) to `localStorage` under the key `yap_demo_v2` so changes survive page refresh. Key functions: `persist()` (call after every mutation), `restorePersistedData()` (called at startup — returns `true` if data was restored, skipping the allocation seed), `clearPersistedData()` (called by Full Reset). Students are always re-seeded deterministically from code on each load — only user-driven changes to allocations and leaders need persistence. On startup `boot()` runs **`dedupeAllocations()`** to strip any duplicate `(sid,lid)` rows from older saved state, and every allocation insert goes through **`addAllocation(sid,lid,role)`** which refuses duplicates — together these prevent a leader being listed multiple times for one student.
-- **Phone mode**: header extends up behind Dynamic Island (`padding-top: 50px`); `.pg` has `overflow-x:hidden`; `.alc` cards have `overflow:hidden` to prevent allocate view overflow.
-- **CSS-only charts**: `.cchart`/`.ccol`/`.ccol-bar` column; `.pb`/`.pf` progress bar. No external libraries.
-- **Icon registry** (`IC` object): all icons are inline SVG strings. `team` icon = 3-person group (used for My Students nav item).
+**Where the real SPA diverges from the demo (per-layer notes):**
+- The demo computes everything from its full in-memory mock; the real SPA only shows what the Express API returns. Where the API lacks demo-only data — per-student attendance/lifegroup **dot rows** and **unique-attender counts** — the SPA **approximates with real aggregates** (Fridays/Lifegroup % and counts). No per-week lifegroup tracking was added.
+- **The server enforces what the demo did client-side:** allocation de-dup lives in `POST /allocations` (no client `addAllocation`/`dedupeAllocations`); quad add/edit/allocate is authorised by the backend (`leader:write` + `quadGenderOf`/`quadGradesOf` scoping, tested in `src/tests/leader.service.test.ts`).
+- **Function names differ** from the demo: `showStudentDetail`/`assignSD`/`unassignSD`/`sdLeaderSearch`, `openStudentPicker`/`remPick`/`pickerSyncBg`, `renderMyStudents` (+`_lvF`/`tLvF`), `renderHome` (+`_hAttTile`/`toggleHomeQuad`), `grpBar`/`trendArrow`. Phone-mode uses `env(safe-area-inset-top)` (var `--safe-t`) rather than the demo's fixed `padding-top:50px`.
 
 ## Environment variables
 
